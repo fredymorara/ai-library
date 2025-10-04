@@ -1,7 +1,14 @@
 // src/components/Header.jsx
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { FiStar, FiInfo, FiMail } from "react-icons/fi"; // Removed FiTag
+import { FiStar, FiInfo, FiMail } from "react-icons/fi";
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 
 export const Header = () => {
   return (
@@ -58,9 +65,17 @@ export const Header = () => {
 
           <div className="flex items-center gap-4">
             <div className="sm:flex sm:gap-4">
-              {/* UPDATED: Changed Login button to a visible variant */}
-              <Button variant="outline">Login</Button>
-              <Button>Register</Button>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button variant="outline">Login</Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button>Register</Button>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
             </div>
           </div>
         </div>
