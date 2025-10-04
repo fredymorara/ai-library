@@ -38,7 +38,7 @@ export const HeroWithCards = () => {
             delay={3000}
             pauseOnHover={true}
             skewAmount={7}
-            height={500}
+            height={400}
             width={550}
             easing="linear"
           >
