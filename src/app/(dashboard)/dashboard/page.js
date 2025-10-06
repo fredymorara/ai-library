@@ -6,36 +6,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowUpRight, BookOpen, Users, MessageSquare, Code, Settings } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Footer } from "@/components/Footer";
+import { ChartAreaInteractive } from "@/components/chart-area-interactive";
+import { Footer } from "@/components/Footer"; // <-- IMPORT THE FOOTER HERE
 
-// StatCard component defined locally for this page
 const StatCard = ({ title, value, icon, description }) => (
   <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-gray-400">{title}</CardTitle>
-      <div className="text-gray-400">{icon}</div>
+      <CardTitle className="text-sm font-medium text-gray-300">{title}</CardTitle>
+      <div className="text-gray-300">{icon}</div>
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold text-white">{value}</div>
-      <p className="text-xs text-gray-500">{description}</p>
+      <p className="text-xs text-gray-400">{description}</p>
     </CardContent>
   </Card>
 );
 
 export default function DashboardPage() {
-  // In the future, this data will come from your database
-  const stats = {
-    booksIngested: "1,254",
-    chatsInitiatedThisMonth: "832",
-    totalUsers: "76",
-  };
+  const stats = { booksIngested: "1,254", chatsInitiatedThisMonth: "832", totalUsers: "76" };
   const glassEffect = "border-gray-800 bg-black/30 backdrop-blur-md";
 
   return (
-    // Use a React Fragment to wrap the page content and the footer
+    // Use a React Fragment <> to return multiple elements
     <>
       <div className="mx-auto max-w-7xl">
-        {/* The page title is now in layout.js, so this section just has the button */}
         <div className="flex justify-end items-center mb-6">
           <Link href="/onboarding">
             <Button>
@@ -44,31 +38,20 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* --- STATS GRID --- */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
           <StatCard title="Books Ingested" value={stats.booksIngested} icon={<BookOpen className="h-4 w-4" />} description="Total books in your AI's knowledge base." />
           <StatCard title="Chats This Month" value={stats.chatsInitiatedThisMonth} icon={<MessageSquare className="h-4 w-4" />} description="+22% from last month" />
           <StatCard title="Total Users Helped" value={stats.totalUsers} icon={<Users className="h-4 w-4" />} description="Unique chat sessions initiated." />
         </div>
 
-        {/* --- MAIN DASHBOARD AREA (CHART + ACTIONS) --- */}
         <div className="grid gap-6 lg:grid-cols-5">
-          <Card className={cn("lg:col-span-3", glassEffect)}>
-            <CardHeader>
-              <CardTitle className="text-white">Chat Analytics</CardTitle>
-              <CardDescription className="text-gray-400">User engagement over the last 30 days.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-60 w-full flex items-center justify-center rounded-lg bg-black/20 border-2 border-dashed border-gray-700">
-                <p className="text-sm text-gray-500">Chart Visualization Coming Soon</p>
-              </div>
-            </CardContent>
-          </Card>
-
+          <div className="lg:col-span-3">
+            <ChartAreaInteractive />
+          </div>
           <Card className={cn("lg:col-span-2", glassEffect)}>
             <CardHeader>
               <CardTitle className="text-white">Quick Actions</CardTitle>
-              <CardDescription className="text-gray-400">Manage your assistant and integration.</CardDescription>
+              <CardDescription className="text-gray-300">Manage your assistant and integration.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col space-y-4">
               <Link href="/onboarding"><Button className="w-full justify-start gap-2"><BookOpen className="h-4 w-4" /> Onboarding & Data Sync</Button></Link>
@@ -79,7 +62,8 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {/* Footer is placed at the end of the page content */}
+      {/* --- THIS IS THE FIX --- */}
+      {/* The Footer is now the last element, inside the scrollable area */}
       <div className="mt-16">
         <Footer />
       </div>

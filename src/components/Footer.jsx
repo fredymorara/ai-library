@@ -17,7 +17,7 @@ export const Footer = () => {
         <div className="mt-12 border-t border-gray-800 pt-8">
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              &copy; 2024. Smart Library Assistant. All rights reserved.
+              &copy; 2025. Smart Library Assistant. All rights reserved.
             </p>
           </div>
         </div>
