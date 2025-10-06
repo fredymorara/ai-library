@@ -42,7 +42,7 @@ export default function DashboardLayout({ children }) {
           speed={0.2}
           particleBaseSize={200}
           alphaParticles={true}
-          mouseInteraction={true}
+          mouseInteraction={false}
         />
       </div>
 
