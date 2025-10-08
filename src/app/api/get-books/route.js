@@ -19,7 +19,7 @@ export async function GET(req) {
     const { data: institution } = await supabaseAdmin.from('institutions').select('id').eq('clerk_user_id', userId).single();
 
     if (!institution) {
-      // If they have no institution, they have no books. Return an empty list.
+      // If they have no institution record yet, they have no books.
       return NextResponse.json([]);
     }
 
@@ -31,8 +31,7 @@ export async function GET(req) {
 
     if (booksError) throw booksError;
 
-    return NextResponse.json(books);
-
+    return NextResponse.json(books || []);
   } catch (error) {
     console.error('Error fetching books:', error);
     return new NextResponse(JSON.stringify({ error: error.message || "An internal server error occurred." }), { status: 500 });

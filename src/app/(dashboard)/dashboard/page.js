@@ -1,5 +1,6 @@
 // src/app/(dashboard)/dashboard/page.js
-"use client";
+"use client"
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowUpRight, BookOpen, Users, MessageSquare, Code, Settings } from "lucide-react";
@@ -17,7 +18,27 @@ const StatCard = ({ title, value, icon, description }) => (
 );
 
 export default function DashboardPage() {
-  const stats = { booksIngested: "1,254", chatsInitiatedThisMonth: "832", totalUsers: "76" };
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const stats = { chatsInitiatedThisMonth: "832", totalUsers: "76" };
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/get-books');
+        if (!response.ok) throw new Error("Failed to fetch books.");
+        const data = await response.json();
+        setBooks(data);
+      } catch (error) {
+        console.error("Error fetching books:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, []);
+
   return (
     <>
       <div className="flex justify-between items-center mb-8">
@@ -29,7 +50,12 @@ export default function DashboardPage() {
       </div>
       <div className="space-y-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <StatCard title="Books Ingested" value={stats.booksIngested} icon={<BookOpen className="h-4 w-4" />} description="Total books in your AI's knowledge base." />
+          <StatCard 
+            title="Books Ingested" 
+            value={loading ? "Loading..." : books.length} 
+            icon={<BookOpen className="h-4 w-4" />} 
+            description="Total books in your AI's knowledge base." 
+          />
           <StatCard title="Chats This Month" value={stats.chatsInitiatedThisMonth} icon={<MessageSquare className="h-4 w-4" />} description="+22% from last month" />
           <StatCard title="Total Users Helped" value={stats.totalUsers} icon={<Users className="h-4 w-4" />} description="Unique chat sessions initiated." />
         </div>
