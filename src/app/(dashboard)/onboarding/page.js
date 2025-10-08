@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { FilePlus, Search, Trash2, Edit, RefreshCw, Info, Loader2, CheckCircle, AlertTriangle, Upload, Download } from "lucide-react";
+import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
 import { Footer } from "@/components/Footer";
 
 const BookDataTable = ({ books, loading, onRefresh }) => {
@@ -269,9 +270,9 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl space-y-8">
+      <div className="space-y-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Onboarding & Data Management</h1>
+          <SplitText text="Onboarding & Data Management" className="text-3xl font-bold text-white" />
           <p className="mt-2 text-gray-400">Manage, sync, and enrich your library's AI knowledge base.</p>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

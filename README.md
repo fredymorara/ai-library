@@ -83,6 +83,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-Fredrick M. Morara - [@your_twitter](https://twitter.com/your_twitter) - momanyifredm@gmail.com
+Fredrick M. Morara - fmmorara@kabarak.ac.ke - momanyifredm@gmail.com
 
-Project Link: [https://github.com/your_username/ai-library](https://github.com/your_username/ai-library)
+Project Link: [https://github.com/fredymorara/ai-library](https://github.com/fredymorara/ai-library)
