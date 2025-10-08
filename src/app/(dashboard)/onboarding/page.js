@@ -268,6 +268,21 @@ export default function OnboardingPage() {
     }
   };
 
+  const handlePrepareChatbot = async () => {
+    setStatus('uploading');
+    setMessage('Chatbot preparation has begun. This may take several minutes.');
+    try {
+      const response = await fetch('/api/prepare-chatbot', { method: 'POST' });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setStatus('success');
+      setMessage(result.message);
+    } catch (error) {
+      setStatus('error');
+      setMessage(error.message);
+    }
+  };
+
   return (
     <>
       <div className="space-y-8">
@@ -277,7 +292,7 @@ export default function OnboardingPage() {
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card className={glassEffect}><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus className="h-5 w-5" /> Add Books via CSV</CardTitle><CardDescription className="text-gray-300">Upload a CSV to add to your collection.</CardDescription></CardHeader><CardContent><Button className="w-full" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload CSV</Button><input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileChange} className="hidden" /></CardContent></Card>
-          <Card className={glassEffect}><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw className="h-5 w-5" /> Re-Enrich Collection</CardTitle><CardDescription className="text-gray-300">Restart the AI enrichment for your entire collection.</CardDescription></CardHeader><CardContent><Button variant="destructive" className="w-full" disabled>Start Full Enrichment</Button></CardContent></Card>
+          <Card className={glassEffect}><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw className="h-5 w-5" /> Prepare Chatbot</CardTitle><CardDescription className="text-gray-300">Prepares the chatbot by re-enriching the AI with your collection.</CardDescription></CardHeader><CardContent><Button variant="destructive" className="w-full" onClick={handlePrepareChatbot}>Prepare Chatbot</Button></CardContent></Card>
         </div>
         {status !== 'idle' && message && (
           <div className="flex items-center gap-3 rounded-md bg-gray-900/50 p-4">
