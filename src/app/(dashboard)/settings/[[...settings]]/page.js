@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, RefreshCw, CheckIcon } from "lucide-react";
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState('');

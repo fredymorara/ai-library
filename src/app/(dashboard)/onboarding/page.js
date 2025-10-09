@@ -126,7 +126,7 @@ const BookDataTable = ({ books, loading, onRefresh }) => {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
               <CardTitle className="text-white">Your Live Collection ({books.length} Books)</CardTitle>
-              <CardDescription className="text-gray-300">Search, edit, or delete books from the AI's knowledge base.</CardDescription>
+              <CardDescription className="text-gray-300">Search, edit, or delete books from the AI&apos;s knowledge base.</CardDescription>
             </div>
             <Button variant="outline" onClick={handleDownloadCSV}><Download className="mr-2 h-4 w-4" /> Download as CSV</Button>
           </div>
@@ -205,7 +205,7 @@ const BookDataTable = ({ books, loading, onRefresh }) => {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription className="text-gray-400">This will permanently delete "{deleteBook?.title}".</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription className="text-gray-400">This will permanently delete &quot;{deleteBook?.title}&quot;.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-transparent border border-gray-700 hover:bg-gray-800 text-white">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
@@ -288,7 +288,7 @@ export default function OnboardingPage() {
       <div className="space-y-8">
         <div className="mb-8">
           <SplitText text="Onboarding & Data Management" className="text-3xl font-bold text-white" />
-          <p className="mt-2 text-gray-400">Manage, sync, and enrich your library's AI knowledge base.</p>
+          <p className="mt-2 text-gray-400">Manage, sync, and enrich your library&apos;s AI knowledge base.</p>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card className={glassEffect}><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus className="h-5 w-5" /> Add Books via CSV</CardTitle><CardDescription className="text-gray-300">Upload a CSV to add to your collection.</CardDescription></CardHeader><CardContent><Button className="w-full" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload CSV</Button><input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileChange} className="hidden" /></CardContent></Card>

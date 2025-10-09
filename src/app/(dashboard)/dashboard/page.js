@@ -44,7 +44,7 @@ export default function DashboardPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <SplitText text="Dashboard" className="text-3xl font-bold text-white" />
-          <p className="text-gray-400">An overview of your library's stats.</p>
+          <p className="text-gray-400">An overview of your library&apos;s stats.</p>
         </div>
         <Link href="/onboarding"><Button>Add New Books <ArrowUpRight className="ml-2 h-4 w-4" /></Button></Link>
       </div>
