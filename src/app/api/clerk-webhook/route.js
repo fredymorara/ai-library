@@ -1,16 +1,11 @@
 // src/app/api/clerk-webhook/route.js
 import { Webhook } from 'svix';
-// REMOVED: We no longer need to import headers from next/headers
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleClient } from "@/lib/supabase/server-client"; // <-- NEW: Import Service Role Client
 import { v4 as uuidv4 } from 'uuid';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
+// The webhook secret is a private environment variable
+const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 export async function POST(req) {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
     throw new Error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local');
   }
@@ -37,28 +32,36 @@ export async function POST(req) {
       "svix-signature": svix_signature,
     });
   } catch (err) {
-    console.error('Error verifying webhook:', err);
-    return new Response('Error occurred', { status: 400 });
+    console.error('Error verifying webhook:', err.message);
+    return new Response('Error verifying webhook', { status: 400 });
   }
 
-  const { id } = evt.data;
   const eventType = evt.type;
 
+  // CRITICAL CHANGE: Use the Service Role Client to bypass RLS for admin writes
+  const supabase = createServiceRoleClient();
+
   if (eventType === 'user.created') {
+    const { id } = evt.data;
     console.log(`Webhook received: User ${id} has been created`);
+
+    // Generate a secure, unique API key for the new institution
     const newApiKey = `sk-${uuidv4()}`;
     
     const { data, error } = await supabase
       .from('institutions')
       .insert([
-        { clerk_user_id: id, api_key: newApiKey, name: 'New Institution' },
+        { clerk_user_id: id, api_key: newApiKey, name: 'New Institution' }, // Assuming user-as-institution model
       ]);
 
     if (error) {
       console.error('Error inserting new institution:', error);
-      return new Response('Error creating institution in DB', { status: 500 });
+      return new Response('Supabase write error', { status: 500 });
     }
     console.log(`Successfully created institution for user ${id}`);
   }
-  return new Response('', { status: 200 });
+
+  // You can add handlers for other events like 'user.updated', 'user.deleted', etc.
+
+  return new Response('OK', { status: 200 });
 }

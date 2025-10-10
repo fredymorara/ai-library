@@ -1,6 +1,7 @@
 // src/app/(dashboard)/onboarding/page.js
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useAuth } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { FilePlus, Search, Trash2, Edit, RefreshCw, Info, Loader2, CheckCircle, AlertTriangle, Upload, Download } from "lucide-react";
+import { FilePlus, Search, Trash2, Edit, RefreshCw, Info, Loader2, CheckCircle, AlertTriangle, Upload, Download, Book } from "lucide-react";
 import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
 import { Footer } from "@/components/Footer";
+import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
-const BookDataTable = ({ books, loading, onRefresh }) => {
+const BookDataTable = ({ books, loading, onRefresh, onBookDeleted, onBookEdited, getToken }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -39,10 +41,21 @@ const BookDataTable = ({ books, loading, onRefresh }) => {
   const handleDelete = async () => {
     if (!deleteBook) return;
     setIsDeleting(true);
+    
+    // CRITICAL FIX: Get token for authorization
+    const token = await getToken();
+
     try {
-      const response = await fetch(`/api/delete-book?id=${deleteBook.id}`, { method: 'DELETE' });
+      const response = await fetch('/api/delete-book', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // <-- JWT HEADER
+        },
+        body: JSON.stringify({ bookId: deleteBook.id, fileName: deleteBook.file_name }),
+      });
       if (!response.ok) throw new Error("Failed to delete book.");
-      onRefresh(); // Refresh the book list
+      onBookDeleted(deleteBook.id); // Optimistically update UI
       setIsDeleteDialogOpen(false);
       setDeleteBook(null);
     } catch (error) {
@@ -55,14 +68,21 @@ const BookDataTable = ({ books, loading, onRefresh }) => {
   const handleEdit = async () => {
     if (!editBook) return;
     setIsEditing(true);
+
+    // CRITICAL FIX: Get token for authorization
+    const token = await getToken();
+
     try {
       const response = await fetch('/api/edit-book', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // <-- JWT HEADER
+        },
         body: JSON.stringify({ bookId: editBook.id, title: editBook.title, author: editBook.author }),
       });
       if (!response.ok) throw new Error("Failed to update book.");
-      onRefresh();
+      onBookEdited(editBook); // Optimistically update UI
       setIsEditDialogOpen(false);
       setEditBook(null);
     } catch (error) {
@@ -125,7 +145,7 @@ const BookDataTable = ({ books, loading, onRefresh }) => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <CardTitle className="text-white">Your Live Collection ({books.length} Books)</CardTitle>
+              <CardTitle className="text-white flex items-center gap-2"><Book className="h-5 w-5" /> Your Live Collection ({books.length} Books)</CardTitle>
               <CardDescription className="text-gray-300">Search, edit, or delete books from the AI&apos;s knowledge base.</CardDescription>
             </div>
             <Button variant="outline" onClick={handleDownloadCSV}><Download className="mr-2 h-4 w-4" /> Download as CSV</Button>
@@ -226,42 +246,116 @@ export default function OnboardingPage() {
   const [message, setMessage] = useState('');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const fetchBooks = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/get-books');
-      if (!response.ok) throw new Error("Failed to fetch books.");
-      const data = await response.json();
-      setBooks(data);
-    } catch (error) {
-      console.error("Error fetching books:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { orgId, getToken } = useAuth();
+  const institutionId = orgId;
 
   useEffect(() => {
-    fetchBooks();
-  }, []);
+    if (!institutionId) {
+      setLoading(false);
+      return; // Wait until institutionId is available
+    }
+
+    const supabase = createSupabaseClient();
+    let channel;
+
+    const fetchAndSubscribe = async () => {
+      setLoading(true);
+      try {
+        const token = await getToken();
+        const response = await fetch('/api/admin/institution', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Could not verify institution.");
+        }
+
+        const { institution } = await response.json();
+        const supabaseInstitutionId = institution.id;
+
+        const fetchBooks = async () => {
+            const { data, error } = await supabase
+              .from("books")
+              .select("id, title, author, is_ingested, file_name, created_at")
+              .eq("institution_id", supabaseInstitutionId) // <-- Use the UUID
+              .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setBooks(data || []);
+        };
+
+        await fetchBooks();
+
+        channel = supabase
+          .channel(`institution_${supabaseInstitutionId}_books_onboarding`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'books', filter: `institution_id=eq.${supabaseInstitutionId}` },
+            (payload) => {
+              console.log('Realtime change received on onboarding:', payload);
+              fetchBooks(); // Re-fetch to get the latest data
+            }
+          )
+          .subscribe();
+
+      } catch (error) {
+        console.error("Error fetching books:", error.message);
+        setMessage(`Error: ${error.message}`);
+        setStatus('error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndSubscribe();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [institutionId, getToken]);
   
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) handleSubmit(file);
   };
+
+  const handleBookDeleted = (bookId) => {
+    setBooks(currentBooks => currentBooks.filter(b => b.id !== bookId));
+  };
+
+  const handleBookEdited = (updatedBook) => {
+    setBooks(currentBooks => currentBooks.map(b => b.id === updatedBook.id ? updatedBook : b));
+  };
   
   const handleSubmit = async (file) => {
     setStatus('uploading');
     setMessage('Parsing and saving books to your collection...');
+    
+    // CRITICAL: Get the session token
+    const token = await getToken(); 
+
     const formData = new FormData();
     formData.append('file', file);
+    
     try {
-      const response = await fetch('/api/upload-books', { method: 'POST', body: formData });
+      const response = await fetch('/api/admin/upload', { 
+            method: 'POST', 
+            body: formData,
+            headers: {
+                // Must NOT set Content-Type for FormData, but include Authorization
+                'Authorization': `Bearer ${token}` 
+            }
+        });
+        
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setStatus('success');
-      setMessage(result.message);
-      await fetchBooks(); // Refresh the book list
+      setMessage(result.message); // Realtime will handle the update
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -271,8 +365,16 @@ export default function OnboardingPage() {
   const handlePrepareChatbot = async () => {
     setStatus('uploading');
     setMessage('Chatbot preparation has begun. This may take several minutes.');
+    
+    const token = await getToken();
+
     try {
-      const response = await fetch('/api/prepare-chatbot', { method: 'POST' });
+      const response = await fetch('/api/prepare-chatbot', { 
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}` 
+        }
+      });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setStatus('success');
@@ -302,8 +404,8 @@ export default function OnboardingPage() {
             <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-gray-300'}`}>{message}</p>
           </div>
         )}
-        <Card className={glassEffect}><CardHeader><CardTitle className="flex items-center gap-2 text-white"><Info className="h-5 w-5" /> CSV File Guide</CardTitle></CardHeader><CardContent className="text-gray-300 text-sm space-y-2"><p>For best results, your CSV file should contain:</p><ul className="list-disc pl-5 space-y-1"><li>A <code className="bg-gray-700 px-1 rounded">title</code> column (Required).</li><li>An <code className="bg-gray-700 px-1 rounded">authors</code> or <code className="bg-gray-700 px-1 rounded">author</code> column (Required).</li></ul></CardContent></Card>
-        <BookDataTable books={books} loading={loading} onRefresh={fetchBooks} />
+        <Card className={glassEffect}><CardHeader><CardTitle className="flex items-center gap-2 text-white"><Info className="h-5 w-5" /> CSV File Guide</CardTitle></CardHeader><CardContent className="text-gray-300 text-sm space-y-2"><p>For best results, your CSV file should contain:</p><ul className="list-disc pl-5 space-y-1"><li>A <code className="bg-gray-700 px-1 rounded">title</code> column (Required).</li><li>An <code className="bg-gray-700 px-1 rounded">author</code> column (Required).</li></ul></CardContent></Card>
+        <BookDataTable books={books} loading={loading} onBookDeleted={handleBookDeleted} onBookEdited={handleBookEdited} getToken={getToken} />
       </div>
       <div className="mt-16"><Footer /></div>
     </>

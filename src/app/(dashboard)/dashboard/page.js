@@ -1,4 +1,3 @@
-// src/app/(dashboard)/dashboard/page.js
 "use client"
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { Footer } from "@/components/Footer";
 import SplitText from "@/blocks/TextAnimations/SplitText/SplitText";
+import { useAuth } from "@clerk/nextjs";
+import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
 const StatCard = ({ title, value, icon, description }) => (
   <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
@@ -21,23 +22,80 @@ export default function DashboardPage() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const stats = { chatsInitiatedThisMonth: "832", totalUsers: "76" };
+  const { orgId, getToken } = useAuth();
+  const institutionId = orgId;
 
   useEffect(() => {
-    const fetchBooks = async () => {
+    if (!institutionId) {
+      setLoading(false);
+      return; // Wait until institutionId is available
+    }
+
+    const supabase = createSupabaseClient();
+    let channel;
+
+    const fetchAndSubscribe = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/get-books');
-        if (!response.ok) throw new Error("Failed to fetch books.");
-        const data = await response.json();
-        setBooks(data);
+        const token = await getToken();
+        const response = await fetch('/api/admin/institution', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not verify institution.");
+        }
+
+        const { institution } = await response.json();
+        const supabaseInstitutionId = institution.id;
+
+        const fetchBooks = async () => {
+            const { data, error } = await supabase
+              .from("books")
+              .select("id, title, author, is_ingested, created_at")
+              .eq("institution_id", supabaseInstitutionId) // <-- Use the UUID
+              .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setBooks(data || []);
+        };
+
+        await fetchBooks();
+
+        channel = supabase
+          .channel(`institution_${supabaseInstitutionId}_books`)
+          .on(
+            'postgres_changes',
+            { 
+              event: '*', // Listen for INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'books',
+              filter: `institution_id=eq.${supabaseInstitutionId}` // Filter changes for THIS institution
+            },
+            (payload) => {
+              console.log('Realtime change received:', payload);
+              fetchBooks(); 
+            }
+          )
+          .subscribe();
+
       } catch (error) {
-        console.error("Error fetching books:", error);
+        console.error("Error fetching books:", error.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchBooks();
-  }, []);
+
+    fetchAndSubscribe();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [institutionId, getToken]);
 
   return (
     <>
