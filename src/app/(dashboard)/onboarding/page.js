@@ -168,6 +168,8 @@ export default function OnboardingPage() {
   const handleEdit = async () => {
     if (!editBook) return;
     setIsEditing(true);
+    setStatus('uploading');
+    setMessage('Updating book details...');
     try {
       const token = await getToken();
       const response = await fetch(`/api/admin/books/${editBook.id}`, {
@@ -175,8 +177,11 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title: editBook.title, author: editBook.author }),
       });
-      if (!response.ok) throw new Error('Failed to update book.');
-      await fetchBooks();
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to update book.');
+      setStatus('success');
+      setMessage('Book updated successfully.');
+      await fetchBooks(); // Re-fetch to show the update
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -189,14 +194,19 @@ export default function OnboardingPage() {
   const handleDelete = async () => {
     if (!deleteBook) return;
     setIsDeleting(true);
+    setStatus('uploading');
+    setMessage(`Deleting "${deleteBook.title}"...`);
     try {
       const token = await getToken();
       const response = await fetch(`/api/admin/books/${deleteBook.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error('Failed to delete book.');
-      await fetchBooks();
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete book.');
+      setStatus('success');
+      setMessage('Book deleted successfully.');
+      await fetchBooks(); // Re-fetch to show the update
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
