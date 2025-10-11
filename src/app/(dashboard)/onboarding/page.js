@@ -195,6 +195,26 @@ export default function OnboardingPage() {
     }
   };
 
+  const handlePrepareChatbot = async () => {
+    setStatus('uploading');
+    setMessage('Starting ingestion process... This may take a while.');
+    try {
+      const token = await getToken();
+      const response = await fetch('/api/prepare-chatbot', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to prepare chatbot.');
+      setStatus('success');
+      setMessage(result.message);
+      fetchBooks(); // Refresh the books to show their ingested status
+    } catch (error) {
+      setStatus('error');
+      setMessage(error.message);
+    }
+  };
+
   const handleEdit = async () => {
     if (!editBook) return;
     setIsEditing(true);
@@ -256,7 +276,7 @@ export default function OnboardingPage() {
         
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus /> Add Books</CardTitle><CardDescription>Upload a CSV or PDF file.</CardDescription></CardHeader><CardContent><Button className={`w-full ${buttonStyles}`} onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload File</Button><input ref={fileInputRef} type="file" accept=".csv,.pdf" onChange={(e) => handleUpload(e.target.files[0])} className="hidden" /></CardContent></Card>
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button className={`w-full ${destructiveButtonStyles}`}>Prepare Chatbot</Button></CardContent></Card>
+          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button className={`w-full ${destructiveButtonStyles}`} onClick={handlePrepareChatbot}>Prepare Chatbot</Button></CardContent></Card>
         </div>
 
         {status !== 'idle' && message && (

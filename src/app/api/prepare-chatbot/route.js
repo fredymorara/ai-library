@@ -34,7 +34,8 @@ export async function POST(request) {
       .from('books')
       .select('id, title, author, file_name')
       .eq('institution_id', institutionId)
-      .eq('is_ingested', false);
+      .eq('is_ingested', false)
+      .limit(5); // <-- PROCESS IN SMALL BATCHES
 
     if (booksError) {
       return NextResponse.json({ error: 'Failed to fetch books for ingestion.', details: booksError.message }, { status: 500 });
