@@ -14,6 +14,10 @@ import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
 import { Footer } from "@/components/Footer";
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
+// --- STYLING CONSTANTS ---
+const buttonStyles = "bg-transparent text-white border border-green-500/50 hover:bg-green-500/10 hover:border-green-500";
+const destructiveButtonStyles = "bg-transparent text-white border border-red-500/50 hover:bg-red-500/10 hover:border-red-500";
+
 // Simplified Data Table
 const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageChange, currentPage, totalPages }) => {
   const renderPaginationItems = () => {
@@ -27,7 +31,13 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
     for (let i = startPage; i <= endPage; i++) {
       items.push(
         <PaginationItem key={i}>
-          <PaginationLink isActive={i === currentPage} onClick={() => onPageChange(i)}>{i}</PaginationLink>
+          <PaginationLink 
+            isActive={i === currentPage} 
+            onClick={() => onPageChange(i)}
+            className={i === currentPage ? 'bg-green-500/20 border-green-500' : ''}
+          >
+            {i}
+          </PaginationLink>
         </PaginationItem>
       );
     }
@@ -53,7 +63,7 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
                     <TableCell className="font-medium text-white pl-6">{book.title}</TableCell>
                     <TableCell className="text-gray-400">{book.author}</TableCell>
                     <TableCell className="text-right pr-6">
-                      <Button variant="ghost" size="icon" className="mr-2 text-gray-400 hover:text-white" onClick={() => onEdit(book)}><Edit className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="mr-2 text-green-500 hover:text-green-400" onClick={() => onEdit(book)}><Edit className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-400" onClick={() => onDelete(book)}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
@@ -166,7 +176,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({ title: editBook.title, author: editBook.author }),
       });
       if (!response.ok) throw new Error('Failed to update book.');
-      await fetchBooks(); // Re-fetch to show the update
+      await fetchBooks();
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -186,7 +196,7 @@ export default function OnboardingPage() {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Failed to delete book.');
-      await fetchBooks(); // Re-fetch to show the update
+      await fetchBooks();
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -205,8 +215,8 @@ export default function OnboardingPage() {
         </div>
         
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus /> Add Books</CardTitle><CardDescription>Upload a CSV or PDF file.</CardDescription></CardHeader><CardContent><Button className="w-full" onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload File</Button><input ref={fileInputRef} type="file" accept=".csv,.pdf" onChange={(e) => handleUpload(e.target.files[0])} className="hidden" /></CardContent></Card>
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button variant="destructive" className="w-full">Prepare Chatbot</Button></CardContent></Card>
+          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus /> Add Books</CardTitle><CardDescription>Upload a CSV or PDF file.</CardDescription></CardHeader><CardContent><Button className={`w-full ${buttonStyles}`} onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload File</Button><input ref={fileInputRef} type="file" accept=".csv,.pdf" onChange={(e) => handleUpload(e.target.files[0])} className="hidden" /></CardContent></Card>
+          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button className={`w-full ${destructiveButtonStyles}`}>Prepare Chatbot</Button></CardContent></Card>
         </div>
 
         {status !== 'idle' && message && (
@@ -237,23 +247,23 @@ export default function OnboardingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editBook} onOpenChange={(isOpen) => !isOpen && setEditBook(null)}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-800 text-white">
+        <DialogContent className="sm:max-w-[425px] bg-gray-950 border-gray-800 text-white">
           <DialogHeader><DialogTitle>Edit Book</DialogTitle></DialogHeader>
           {editBook && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="title" className="text-right">Title</label>
-                <Input id="title" value={editBook.title} onChange={(e) => setEditBook({...editBook, title: e.target.value})} className="col-span-3 bg-white text-black" />
+                <Input id="title" value={editBook.title} onChange={(e) => setEditBook({...editBook, title: e.target.value})} className="col-span-3 bg-gray-800 border-gray-700 text-white" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="author" className="text-right">Author</label>
-                <Input id="author" value={editBook.author} onChange={(e) => setEditBook({...editBook, author: e.target.value})} className="col-span-3 bg-white text-black" />
+                <Input id="author" value={editBook.author} onChange={(e) => setEditBook({...editBook, author: e.target.value})} className="col-span-3 bg-gray-800 border-gray-700 text-white" />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setEditBook(null)} variant="outline">Cancel</Button>
-            <Button onClick={handleEdit} disabled={isEditing}>
+            <Button onClick={() => setEditBook(null)} variant="outline" className={buttonStyles}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={isEditing} className={buttonStyles}>
               {isEditing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Changes
             </Button>
           </DialogFooter>
@@ -263,10 +273,10 @@ export default function OnboardingPage() {
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteBook} onOpenChange={(isOpen) => !isOpen && setDeleteBook(null)}>
         <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete "{deleteBook?.title}".</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription className="text-gray-400">This will permanently delete "{deleteBook?.title}".</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={destructiveButtonStyles}>
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
             </AlertDialogAction>
           </AlertDialogFooter>
