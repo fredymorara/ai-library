@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { FiStar, FiInfo, FiMail } from "react-icons/fi";
 import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
+import ClientOnly from "@/components/utils/ClientOnly";
+
 const LoginButton = React.forwardRef((props, ref) => {
   const { afterSignInUrl, ...rest } = props;
   return <Button ref={ref} variant="outline" {...rest}>Login</Button>;
@@ -41,17 +43,19 @@ export const Header = () => {
 
           <div className="flex items-center gap-4">
             <div className="sm:flex sm:gap-4">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <LoginButton />
-                </SignInButton>
-                <SignUpButton mode="modal" afterSignUpUrl="/dashboard">
-                  <RegisterButton />
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
-                <UserButton afterSignOutUrl="/" />
-              </SignedIn>
+              <ClientOnly>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <LoginButton />
+                  </SignInButton>
+                  <SignUpButton mode="modal" afterSignUpUrl="/dashboard">
+                    <RegisterButton />
+                  </SignUpButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton afterSignOutUrl="/" />
+                </SignedIn>
+              </ClientOnly>
             </div>
           </div>
         </div>

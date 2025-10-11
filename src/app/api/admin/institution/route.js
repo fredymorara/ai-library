@@ -35,7 +35,7 @@ export async function GET(request) {
 
       if (createError) {
         console.error("Institution creation error:", createError);
-        return NextResponse.json({ error: 'Failed to create institution record.' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to create institution record.', details: createError.message }, { status: 500 });
       }
 
       institution = newInstitution;

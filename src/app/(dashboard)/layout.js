@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose, Menu } from "lucide-react"; // <-- Import Menu icon
 import { usePathname } from "next/navigation";
 
+import ClientOnly from "@/components/utils/ClientOnly";
+
 export default function DashboardLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -65,7 +67,9 @@ export default function DashboardLayout({ children }) {
             <div>
               <Shuffle text="Smart Library Assistant" className="text-2xl font-semibold text-white" triggerOnHover={true} />
             </div>
-            <UserButton afterSignOutUrl="/" />
+            <ClientOnly>
+              <UserButton afterSignOutUrl="/" />
+            </ClientOnly>
           </header>
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
             {children}

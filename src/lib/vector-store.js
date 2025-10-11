@@ -3,7 +3,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/server-client";
 
 // Define the table where vector data is stored
-const VECTOR_TABLE = 'vectors'; 
+const VECTOR_TABLE = 'book_vectors'; 
 
 /**
  * Writes text chunks and their embeddings to the pgvector table.

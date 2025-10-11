@@ -1,15 +1,14 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowUpRight, BookOpen, Users, MessageSquare, Code, Settings } from "lucide-react";
+import { ArrowUpRight, BookOpen, Users, MessageSquare, Code, Settings, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { Footer } from "@/components/Footer";
 import SplitText from "@/blocks/TextAnimations/SplitText/SplitText";
 import { useAuth } from "@clerk/nextjs";
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
 const StatCard = ({ title, value, icon, description }) => (
   <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
@@ -19,83 +18,42 @@ const StatCard = ({ title, value, icon, description }) => (
 );
 
 export default function DashboardPage() {
-  const [books, setBooks] = useState([]);
+  const [stats, setStats] = useState({ totalBooks: 0, ingestedBooks: 0 });
   const [loading, setLoading] = useState(true);
-  const stats = { chatsInitiatedThisMonth: "832", totalUsers: "76" };
-  const { orgId, getToken } = useAuth();
-  const institutionId = orgId;
+  const { getToken } = useAuth();
+
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      // We only need the counts, so we can ask for a single row to be efficient
+      const url = `/api/admin/books?limit=1`; 
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch stats.');
+      const { totalCount } = await response.json();
+
+      // To get the ingested count, we need a separate query for now.
+      // In a real-world scenario, this might be a dedicated stats endpoint.
+      const ingestedUrl = `/api/admin/books?limit=1&is_ingested=true`;
+      const ingestedResponse = await fetch(ingestedUrl, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!ingestedResponse.ok) throw new Error('Failed to fetch ingested stats.');
+      const { totalCount: ingestedCount } = await ingestedResponse.json();
+
+      setStats({ totalBooks: totalCount, ingestedBooks: ingestedCount });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
 
   useEffect(() => {
-    if (!institutionId) {
-      setLoading(false);
-      return; // Wait until institutionId is available
-    }
-
-    const supabase = createSupabaseClient();
-    let channel;
-
-    const fetchAndSubscribe = async () => {
-      setLoading(true);
-      try {
-        const token = await getToken();
-        const response = await fetch('/api/admin/institution', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("Could not verify institution.");
-        }
-
-        const { institution } = await response.json();
-        const supabaseInstitutionId = institution.id;
-
-        const fetchBooks = async () => {
-            const { data, error } = await supabase
-              .from("books")
-              .select("id, title, author, is_ingested, created_at")
-              .eq("institution_id", supabaseInstitutionId) // <-- Use the UUID
-              .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setBooks(data || []);
-        };
-
-        await fetchBooks();
-
-        channel = supabase
-          .channel(`institution_${supabaseInstitutionId}_books`)
-          .on(
-            'postgres_changes',
-            { 
-              event: '*', // Listen for INSERT, UPDATE, DELETE
-              schema: 'public',
-              table: 'books',
-              filter: `institution_id=eq.${supabaseInstitutionId}` // Filter changes for THIS institution
-            },
-            (payload) => {
-              console.log('Realtime change received:', payload);
-              fetchBooks(); 
-            }
-          )
-          .subscribe();
-
-      } catch (error) {
-        console.error("Error fetching books:", error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAndSubscribe();
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [institutionId, getToken]);
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <>
@@ -104,18 +62,24 @@ export default function DashboardPage() {
           <SplitText text="Dashboard" className="text-3xl font-bold text-white" />
           <p className="text-gray-400">An overview of your library&apos;s stats.</p>
         </div>
-        <Link href="/onboarding"><Button>Add New Books <ArrowUpRight className="ml-2 h-4 w-4" /></Button></Link>
+        <Link href="/onboarding"><Button>Manage Books <ArrowUpRight className="ml-2 h-4 w-4" /></Button></Link>
       </div>
       <div className="space-y-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
-            title="Books Ingested" 
-            value={loading ? "Loading..." : books.length} 
-            icon={<BookOpen className="h-4 w-4" />} 
-            description="Total books in your AI's knowledge base." 
+            title="Total Books"
+            value={loading ? "..." : stats.totalBooks}
+            icon={<BookOpen className="h-4 w-4" />}
+            description="Total books in your library catalog."
           />
-          <StatCard title="Chats This Month" value={stats.chatsInitiatedThisMonth} icon={<MessageSquare className="h-4 w-4" />} description="+22% from last month" />
-          <StatCard title="Total Users Helped" value={stats.totalUsers} icon={<Users className="h-4 w-4" />} description="Unique chat sessions initiated." />
+          <StatCard 
+            title="Books Ingested"
+            value={loading ? "..." : stats.ingestedBooks}
+            icon={<CheckCircle className="h-4 w-4" />}
+            description="Books ready for the AI to use."
+          />
+          <StatCard title="Chats This Month" value="832" icon={<MessageSquare className="h-4 w-4" />} description="+22% from last month" />
+          <StatCard title="Total Users Helped" value="76" icon={<Users className="h-4 w-4" />} description="Unique chat sessions initiated." />
         </div>
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3"><ChartAreaInteractive /></div>
