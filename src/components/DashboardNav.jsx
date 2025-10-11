@@ -6,13 +6,14 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // For icon tooltips
-import { LayoutDashboard, FileUp, Code, Settings } from "lucide-react";
+import { LayoutDashboard, FileUp, Code, Settings, KeyRound } from "lucide-react";
 
 const links = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Onboarding", href: "/onboarding", icon: FileUp },
   { name: "Snippets", href: "/snippets", icon: Code },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "API Keys", href: "/settings/api-keys", icon: KeyRound },
 ];
 
 export const DashboardNav = ({ isCollapsed }) => {
