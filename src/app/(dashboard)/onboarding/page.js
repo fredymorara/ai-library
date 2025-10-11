@@ -14,9 +14,25 @@ import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
 import { Footer } from "@/components/Footer";
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 // --- STYLING CONSTANTS ---
 const buttonStyles = "bg-transparent text-white border border-green-500/50 hover:bg-green-500/10 hover:border-green-500";
 const destructiveButtonStyles = "bg-transparent text-white border border-red-500/50 hover:bg-red-500/10 hover:border-red-500";
+
+// Cell component with tooltip for truncated text
+const TruncatedCell = ({ text }) => (
+  <TooltipProvider delayDuration={300}>
+    <Tooltip>
+      <TooltipTrigger className="truncate max-w-xs md:max-w-md lg:max-w-lg text-left">
+        {text}
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 // Simplified Data Table
 const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageChange, currentPage, totalPages }) => {
@@ -59,12 +75,26 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
                 <TableRow><TableCell colSpan={3} className="text-center text-gray-400 h-24">Loading books...</TableCell></TableRow>
               ) : books.length > 0 ? (
                 books.map((book) => (
-                  <TableRow key={book.id} className="border-gray-800">
-                    <TableCell className="font-medium text-white pl-6">{book.title}</TableCell>
-                    <TableCell className="text-gray-400">{book.author}</TableCell>
+                  <TableRow key={book.id} className="border-gray-800 hover:bg-transparent">
+                    <TableCell className="font-medium text-white pl-6"><TruncatedCell text={book.title} /></TableCell>
+                    <TableCell className="text-gray-400"><TruncatedCell text={book.author} /></TableCell>
                     <TableCell className="text-right pr-6">
-                      <Button variant="ghost" size="icon" className="mr-2 text-green-500 hover:text-green-400" onClick={() => onEdit(book)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-400" onClick={() => onDelete(book)}><Trash2 className="h-4 w-4" /></Button>
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="mr-2 rounded-full hover:bg-green-500/10" onClick={() => onEdit(book)}><Edit className="h-4 w-4 text-green-500" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Edit Book</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-green-500/10" onClick={() => onDelete(book)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Delete Book</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))
