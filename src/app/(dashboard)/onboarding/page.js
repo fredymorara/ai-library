@@ -343,7 +343,7 @@ export default function OnboardingPage() {
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteBook} onOpenChange={(isOpen) => !isOpen && setDeleteBook(null)}>
         <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription className="text-gray-400">This will permanently delete "{deleteBook?.title}".</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete &quot;{deleteBook?.title}&quot;.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={destructiveButtonStyles}>

@@ -130,14 +130,14 @@ export default function ApiKeysPage() {
       <div className="space-y-8">
         <div className="mb-8">
           <SplitText text="API Keys" className="text-3xl font-bold text-green-500" />
-          <p className="text-gray-400">Manage API keys for accessing your library's AI assistant.</p>
+          <p className="text-gray-400">Manage API keys for accessing your library&apos;s AI assistant.</p>
         </div>
 
         <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-white">Your API Keys</CardTitle>
-              <CardDescription className="text-gray-300">Keys only grant public query access. They do not have admin rights.</CardDescription>
+              <CardDescription>Keys only grant public query access. They don&apos;t have admin rights.</CardDescription>
             </div>
             <Button className={buttonStyles} onClick={() => setShowCreateDialog(true)}><PlusCircle className="mr-2 h-4 w-4" /> Create New Key</Button>
           </CardHeader>
@@ -177,7 +177,10 @@ export default function ApiKeysPage() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-[425px] bg-gray-950 border-gray-800 text-white">
           <DialogHeader><DialogTitle>Create New API Key</DialogTitle></DialogHeader>
-          <div className="py-4"><label htmlFor="key-name">Key Name (optional)</label><Input id="key-name" placeholder="e.g., Production Key" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="mt-2 bg-gray-800" /></div>
+                    <div className="py-4">
+                      <label htmlFor="key-name" className="text-sm font-medium">Key Name (optional)</label>
+                      <Input id="key-name" placeholder="e.g., Production Key" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="mt-2 bg-gray-800 border-gray-700 text-white" />
+                    </div>
           <DialogFooter><Button variant="outline" className={buttonStyles} onClick={() => setShowCreateDialog(false)}>Cancel</Button><Button className={buttonStyles} onClick={handleCreateKey} disabled={isCreating}>{isCreating ? 'Creating...' : 'Create Key'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
@@ -192,7 +195,7 @@ export default function ApiKeysPage() {
 
       <AlertDialog open={!!keyToDelete} onOpenChange={() => setKeyToDelete(null)}>
         <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will PERMANENTLY DELETE the key "{keyToDelete?.name}". This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will PERMANENTLY DELETE the key &quot;{keyToDelete?.name}&quot;. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel><AlertDialogAction className={destructiveButtonStyles} onClick={handleDeleteKey} disabled={isDeleting}>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
