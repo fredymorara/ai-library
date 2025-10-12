@@ -2,8 +2,8 @@
 import { FiCpu, FiMessageSquare, FiPackage } from "react-icons/fi";
 
 const FeatureCard = ({ icon, title, children }) => (
-  <div className="block rounded-xl border border-gray-800 bg-black/30 backdrop-blur-sm p-8 shadow-xl transition hover:border-indigo-500/10 hover:shadow-indigo-500/10">
-    <div className="text-indigo-400 text-3xl">{icon}</div>
+  <div className="block rounded-xl border border-gray-800 bg-black/30 backdrop-blur-sm p-8 shadow-xl transition hover:border-green-500/10 hover:shadow-green-500/10">
+    <div className="text-green-400 text-3xl">{icon}</div>
     <h2 className="mt-4 text-xl font-bold text-white">{title}</h2>
     <p className="mt-1 text-sm text-gray-300">{children}</p>
   </div>

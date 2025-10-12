@@ -1,5 +1,5 @@
 /*
-	Installed from https://reactbits.dev/default/
+Installed from https://reactbits.dev/default/
 */
 
 .card-swap-container {
@@ -17,23 +17,26 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  border-radius: 12px;
-  border: 1px solid #fff;
-  background: #000;
+  border-radius: 16px;
+  border: 1px solid rgb(31, 41, 55); /* gray-800 to match chat theme */
+  background: transparent; /* Let the child components handle background */
 
   transform-style: preserve-3d;
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  
+  /* Remove default background since cards have their own */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 }
 
-@media (max-width: 768px) {
+ @media (max-width: 768px) {
   .card-swap-container {
     transform: scale(0.75) translate(25%, 25%);
   }
 }
 
-@media (max-width: 480px) {
+ @media (max-width: 480px) {
   .card-swap-container {
     transform: scale(0.55) translate(25%, 25%);
   }

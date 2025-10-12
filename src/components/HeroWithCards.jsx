@@ -7,6 +7,7 @@ import CardSwap, { Card } from "@/blocks/Components/CardSwap/CardSwap";
 import { useAuth, SignUpButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChatCard1, ChatCard2, ChatCard3 } from "@/components/ChatStyledCards";
 
 const GetStartedButton = React.forwardRef((props, ref) => {
   const { afterSignUpUrl, ...rest } = props;
@@ -24,7 +25,7 @@ export const HeroWithCards = () => {
         <div className="max-w-prose text-left">
           <h1 className="text-4xl font-bold text-white sm:text-5xl">
             Go Beyond the Catalogue.
-            <strong className="text-indigo-400"> Find the Book You Mean.</strong>
+            <strong className="text-green-500"> Find the Book You Mean.</strong>
           </h1>
           <p className="mt-4 text-base text-pretty text-gray-300 sm:text-lg/relaxed">
             Our AI-powered assistant understands concepts, topics, and vague ideas to find the exact book you're looking for in the library's collection.
@@ -53,28 +54,18 @@ export const HeroWithCards = () => {
             delay={3000}
             pauseOnHover={true}
             skewAmount={7}
-            height={400}
-            width={550}
+            height={500}
+            width={450}
             easing="linear"
           >
-            {/* --- YOUR CARDS ARE RESTORED HERE --- */}
             <Card>
-              <div className="p-4">
-                <div className="mb-3 rounded-lg bg-indigo-600 p-3 text-white"><p className="font-semibold">User:</p><p>Do you have any books about the military tactics of ancient Rome?</p></div>
-                <div className="rounded-lg bg-gray-700 p-3 text-gray-200"><p className="font-semibold">Assistant:</p><p>Absolutely! You might be interested in "The Roman Army: The Greatest War Machine of the Ancient World. This books really dives deep into "........................</p></div>
-              </div>
+              <ChatCard1 />
             </Card>
             <Card>
-               <div className="p-4">
-                <div className="mb-3 rounded-lg bg-indigo-600 p-3 text-white"><p className="font-semibold">User:</p><p>I need a good introduction to artificial intelligence.</p></div>
-                <div className="rounded-lg bg-gray-700 p-3 text-gray-200"><p className="font-semibold">Assistant:</p><p>Of course. A great starting point in our library is "Artificial Intelligence: A Modern Approach" It is written by ............................</p></div>
-              </div>
+              <ChatCard2 />
             </Card>
             <Card>
-              <div className="p-4">
-                <div className="mb-3 rounded-lg bg-indigo-600 p-3 text-white"><p className="font-semibold">User:</p><p>Show me books by Bill Bryson.</p></div>
-                <div className="rounded-lg bg-gray-700 p-3 text-gray-200"><p className="font-semibold">Assistant:</p><p>We have "A Short History of Nearly Everything" by Bill Bryson. It's a fantastic book about the history of science. Another one you can look at .................................</p></div>
-              </div>
+              <ChatCard3 />
             </Card>
           </CardSwap>
         </div>

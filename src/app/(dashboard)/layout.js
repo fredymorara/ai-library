@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }) {
       {/* Background Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Particles
-          particleColors={['#B1FF00', '#008000']}
+          particleColors={['#66FF00', '#CCFF00']}
           particleCount={1000}
           particleSpread={10}
           speed={0.2}
