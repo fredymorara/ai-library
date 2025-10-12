@@ -16,19 +16,25 @@ const ChatAssistant = ({ apiKey }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(scrollToBottom, [messages]);
+  useEffect(() => {
+    // Add a welcome message when the chat opens
+    if (isOpen && messages.length === 0) {
+      setMessages([
+        { role: 'bot', content: "Hello! How can I help you with the library's collection today?" }
+      ]);
+    }
+    scrollToBottom();
+  }, [isOpen, messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
-
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
     try {
-      // This is where we will call the public /api/chat endpoint
-      // For now, we'll just mock a response.
+      // Mock API call for demonstration
       setTimeout(() => {
         const botMessage = { 
           role: 'bot', 
@@ -38,7 +44,6 @@ const ChatAssistant = ({ apiKey }) => {
         setMessages(prev => [...prev, botMessage]);
         setLoading(false);
       }, 1000);
-
     } catch (error) {
       const errorMessage = { role: 'bot', content: "Sorry, I couldn't get a response. Please try again." };
       setMessages(prev => [...prev, errorMessage]);
@@ -50,43 +55,43 @@ const ChatAssistant = ({ apiKey }) => {
     return (
       <div className="fixed bottom-8 right-8 z-50">
         <Button onClick={() => setIsOpen(true)} className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600 shadow-lg">
-          <MessageSquare className="h-8 w-8" />
+          <MessageSquare className="h-8 w-8 text-white" />
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 w-[calc(100vw-4rem)] h-[calc(100vh-4rem)] md:w-96 md:h-[600px] bg-gray-950/80 backdrop-blur-lg border border-gray-800 rounded-xl shadow-2xl flex flex-col">
+    <div className="fixed bottom-8 right-8 z-50 w-[calc(100vw-4rem)] h-[calc(100vh-4rem)] md:w-96 md:h-[700px] max-h-[80vh] bg-gray-950/90 backdrop-blur-lg border border-gray-800 rounded-2xl shadow-2xl flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+      <div className="flex items-center justify-between p-4 border-b border-gray-800 flex-shrink-0">
         <h3 className="font-semibold text-white">Library Assistant</h3>
         <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}><X className="h-5 w-5 text-gray-400" /></Button>
       </div>
 
       {/* Messages */}
       <div className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-4">
+        <div className="space-y-6">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-              {msg.role === 'bot' && <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center"><Bot className="h-5 w-5 text-green-400" /></div>}
-              <div className={`max-w-xs md:max-w-sm p-3 rounded-xl ${msg.role === 'user' ? 'bg-green-500/20 text-white' : 'bg-gray-800 text-gray-300'}`}>
-                <p>{msg.content}</p>
+              {msg.role === 'bot' && <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"><Bot className="h-5 w-5 text-green-400" /></div>}
+              <div className={`max-w-xs md:max-w-sm p-3 rounded-xl ${msg.role === 'user' ? 'bg-green-600/40 text-white' : 'bg-gray-800 text-gray-300'}`}>
+                <p className="text-sm">{msg.content}</p>
                 {msg.sources && (
-                  <div className="mt-2 border-t border-gray-700 pt-2">
-                    <h4 className="text-xs font-bold text-gray-400 mb-1">Sources:</h4>
-                    <ul className="space-y-1">
+                  <div className="mt-3 border-t border-gray-700 pt-2">
+                    <h4 className="text-xs font-bold text-gray-400 mb-2">Sources:</h4>
+                    <ul className="space-y-2">
                       {msg.sources.map((source, i) => (
-                        <li key={i} className="text-xs text-gray-500 truncate">{source.excerpt}</li>
+                        <li key={i} className="text-xs text-gray-500 bg-gray-900/50 p-2 rounded-md truncate">{source.excerpt}</li>
                       ))}
                     </ul>
                   </div>
                 )}
               </div>
-              {msg.role === 'user' && <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center"><User className="h-5 w-5" /></div>}
+              {msg.role === 'user' && <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0"><User className="h-5 w-5" /></div>}
             </div>
           ))}
-          {loading && <div className="flex items-start gap-3"><div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center"><Loader2 className="h-5 w-5 text-green-400 animate-spin" /></div><div className="max-w-xs p-3 rounded-xl bg-gray-800 text-gray-300">...</div></div>}
+          {loading && <div className="flex items-start gap-3"><div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"><Loader2 className="h-5 w-5 text-green-400 animate-spin" /></div><div className="max-w-xs p-3 rounded-xl bg-gray-800 text-gray-300">...</div></div>}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -99,7 +104,7 @@ const ChatAssistant = ({ apiKey }) => {
             onChange={(e) => setInput(e.target.value)} 
             onKeyPress={(e) => e.key === 'Enter' && handleSend()} 
             placeholder="Ask a question..." 
-            className="bg-gray-800 border-gray-700 pr-12"
+            className="bg-gray-800 border-gray-700 pr-12 text-white"
           />
           <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={handleSend} disabled={loading}>
             <Send className="h-5 w-5 text-green-400" />
