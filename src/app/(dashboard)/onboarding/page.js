@@ -145,7 +145,15 @@ export default function OnboardingPage() {
       const token = await getToken();
       const url = `/api/admin/books?page=${currentPage}&limit=${booksPerPage}&search=${debouncedSearchTerm}`;
       const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!response.ok) throw new Error('Failed to fetch books.');
+      if (!response.ok) {
+        // If the institution or books aren't found, it's a 404, which is okay for a new user.
+        if (response.status === 404) {
+          setBooks([]);
+          setTotalCount(0);
+          return; // Exit gracefully
+        }
+        throw new Error('Failed to fetch books.');
+      }
       const { books: fetchedBooks, totalCount: fetchedTotalCount } = await response.json();
       setBooks(fetchedBooks);
       setTotalCount(fetchedTotalCount);

@@ -1,15 +1,30 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createServiceRoleClient } from "@/lib/supabase/server-client";
-import { processFileForChunks, getEmbedding } from '@/lib/pdf-processor';
-import { processCsvForChunks } from '@/lib/csv-processor';
-import { insertVectors } from '@/lib/vector-store';
+import { getEmbedding } from '@/lib/embedding-generator'; // We will create this new file
+import wikipedia from 'wikipedia';
 
 export const runtime = 'nodejs';
 
+async function getWikipediaSummary(title, author) {
+  try {
+    const simpleTitle = title.split('(')[0].strip();
+    const mainAuthor = author.split('/')[0].strip();
+    const query = `${simpleTitle} (${mainAuthor})`;
+    const summary = await wikipedia.summary(query, { autoSuggest: true });
+    return summary;
+  } catch (error) {
+    // console.warn(`Wikipedia lookup failed for "${title}":`, error.message);
+    return null;
+  }
+}
+
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function POST(request) {
   try {
-    // 1. Authentication
     const { userId, orgId } = await auth();
     if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,69 +32,43 @@ export async function POST(request) {
 
     const supabase = createServiceRoleClient();
 
-    // 2. Get Institution ID
-    const { data: institution } = await supabase
-      .from('institutions')
-      .select('id')
-      .eq('clerk_org_id', orgId)
-      .single();
-
+    const { data: institution } = await supabase.from('institutions').select('id').eq('clerk_org_id', orgId).single();
     if (!institution) {
       return NextResponse.json({ error: 'Institution not found.' }, { status: 404 });
     }
     const institutionId = institution.id;
 
-    // 3. Fetch non-ingested books
     const { data: books, error: booksError } = await supabase
       .from('books')
-      .select('id, title, author, file_name')
+      .select('id, title, author')
       .eq('institution_id', institutionId)
       .eq('is_ingested', false)
-      .limit(5); // <-- PROCESS IN SMALL BATCHES
+      .limit(5);
 
     if (booksError) {
-      return NextResponse.json({ error: 'Failed to fetch books for ingestion.', details: booksError.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch books for ingestion.' }, { status: 500 });
     }
-
     if (!books || books.length === 0) {
       return NextResponse.json({ message: 'All books are already ingested.' });
     }
 
-    // 4. Process each book
     for (const book of books) {
-      let chunks = [];
+      const baseInfo = `Title: ${book.title}. Author: ${book.author}.`;
+      const summary = await getWikipediaSummary(book.title, book.author);
+      const documentText = summary ? `${baseInfo} Summary: ${summary}` : baseInfo;
+
+      const embedding = await getEmbedding(documentText);
+
+      await supabase.from('book_vectors').insert({
+        book_id: book.id,
+        institution_id: institutionId,
+        content: documentText,
+        embedding: embedding,
+      });
+
+      await supabase.from('books').update({ is_ingested: true }).eq('id', book.id);
       
-      if (book.file_name) {
-        // --- PDF/File Processing ---
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('library-files')
-          .download(book.file_name);
-
-        if (downloadError) {
-          console.error(`Failed to download file ${book.file_name} for book ${book.id}:`, downloadError);
-          continue; // Skip to next book
-        }
-        
-        const fileBuffer = Buffer.from(await fileData.arrayBuffer());
-        chunks = await processFileForChunks(fileBuffer);
-
-      } else {
-        // --- CSV-based Book Processing ---
-        const csvRowContent = JSON.stringify({ title: book.title, author: book.author });
-        chunks = [csvRowContent];
-      }
-
-      // 5. Generate Embeddings
-      const embeddings = await Promise.all(chunks.map(chunk => getEmbedding(chunk)));
-
-      // 6. Insert into vector store
-      await insertVectors(book.id, institutionId, chunks, embeddings);
-
-      // 7. Mark book as ingested
-      await supabase
-        .from('books')
-        .update({ is_ingested: true })
-        .eq('id', book.id);
+      await sleep(1000); // Be polite to the Wikipedia API
     }
 
     return NextResponse.json({ message: `Successfully ingested ${books.length} new book(s).` });

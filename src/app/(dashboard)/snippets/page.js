@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Code, Copy, Check } from "lucide-react";
 import SplitText from "@/blocks/TextAnimations/SplitText/SplitText";
 import { Footer } from "@/components/Footer";
@@ -32,39 +33,15 @@ const CodeSnippet = ({ code }) => {
 };
 
 export default function SnippetsPage() {
-  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState('react');
-  const [apiKey, setApiKey] = useState('YOUR_API_KEY_HERE');
-  const [displayApiKey, setDisplayApiKey] = useState('YOUR_API_KEY_HERE');
-
-  useEffect(() => {
-    const fetchFirstKey = async () => {
-      try {
-        const token = await getToken();
-        const response = await fetch('/api/admin/api-keys', { headers: { 'Authorization': `Bearer ${token}` } });
-        const { apiKeys } = await response.json();
-        if (apiKeys && apiKeys.length > 0) {
-          const firstActiveKey = apiKeys.find(k => k.is_active);
-          if(firstActiveKey) {
-             // We can't get the full key, so we use a placeholder for the display snippet
-             setDisplayApiKey(`YOUR_API_KEY (e.g., ${firstActiveKey.key_prefix})`);
-             // For the actual component demo, we need a real key. We'll use the key ID as a stand-in.
-             // In a real product, we might need to rethink this flow.
-             setApiKey(firstActiveKey.id); // Using ID for demo purposes
-          }
-        }
-      } catch (error) {
-        console.error("Could not fetch API key for snippet.", error);
-      }
-    };
-    fetchFirstKey();
-  }, [getToken]);
+  const [apiKey, setApiKey] = useState(''); // State for the live demo key
 
   const reactSnippet = `
 import ChatAssistant from '@/components/ChatAssistant';
 
 function YourApp() {
-  const apiKey = "${displayApiKey}";
+  // Replace with your actual API Key
+  const apiKey = "${apiKey || 'YOUR_API_KEY_HERE'}";
 
   return (
     <div>
@@ -79,7 +56,7 @@ function YourApp() {
 <!-- Add this script tag to the end of your <body> -->
 <script>
   window.chatAssistant = {
-    apiKey: "${displayApiKey}",
+    apiKey: "${apiKey || 'YOUR_API_KEY_HERE'}",
   };
 </script>
 <script src="https://your-cdn.com/chat-assistant.js" defer></script>
@@ -90,8 +67,24 @@ function YourApp() {
       <div className="space-y-8">
         <div className="mb-8">
           <SplitText text="Integration Snippets" className="text-3xl font-bold text-white" />
-          <p className="mt-2 text-gray-400">Integrate the chatbot into your website with these snippets.</p>
+          <p className="mt-2 text-gray-400">Use these snippets to integrate the chatbot into your website.</p>
         </div>
+
+        {/* Live Demo API Key Input */}
+        <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
+          <CardHeader>
+            <CardTitle className="text-white">Live Demo Setup</CardTitle>
+            <CardDescription className="text-gray-300">Create an API key on the API Keys page, then paste it here to activate the live demo widget on this page.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input 
+              placeholder="Paste your pk_live_... key here to test the widget"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+          </CardContent>
+        </Card>
 
         <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
           <CardHeader>
@@ -108,8 +101,8 @@ function YourApp() {
       </div>
       <div className="mt-16"><Footer /></div>
 
-      {/* Live Demo of the Chat Assistant */}
-      <ChatAssistant apiKey={apiKey} />
+      {/* Live Demo of the Chat Assistant (only renders if API key is provided) */}
+      {apiKey && <ChatAssistant apiKey={apiKey} />}
     </>
   );
 }

@@ -31,16 +31,29 @@ export default function DashboardPage() {
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error('Failed to fetch stats.');
+      if (!response.ok) {
+        // If the institution hasn't been created yet, it's a 404, which is okay.
+        if (response.status === 404) {
+          setStats({ totalBooks: 0, ingestedBooks: 0 });
+          return; // Exit gracefully
+        }
+        throw new Error('Failed to fetch stats.');
+      }
       const { totalCount } = await response.json();
 
       // To get the ingested count, we need a separate query for now.
-      // In a real-world scenario, this might be a dedicated stats endpoint.
       const ingestedUrl = `/api/admin/books?limit=1&is_ingested=true`;
       const ingestedResponse = await fetch(ingestedUrl, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!ingestedResponse.ok) throw new Error('Failed to fetch ingested stats.');
+      // Also handle 404 for this request
+      if (!ingestedResponse.ok) {
+        if (ingestedResponse.status === 404) {
+          setStats(prev => ({ ...prev, ingestedBooks: 0 }));
+          return;
+        }
+        throw new Error('Failed to fetch ingested stats.');
+      }
       const { totalCount: ingestedCount } = await ingestedResponse.json();
 
       setStats({ totalBooks: totalCount, ingestedBooks: ingestedCount });
