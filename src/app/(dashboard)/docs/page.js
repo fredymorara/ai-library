@@ -7,8 +7,8 @@ import { Footer } from "@/components/Footer";
 
 const DocumentationPage = () => {
   return (
-    <>
-      <div className="space-y-8 text-gray-300">
+    <div className="flex flex-col min-h-full">
+      <div className="flex-grow space-y-8 text-gray-300">
         <div className="mb-12">
           <SplitText text="Documentation" className="text-3xl font-bold text-green-500" />
           <p className="mt-2 text-gray-400">A step-by-step guide to setting up and using your Smart Library Assistant.</p>
@@ -74,7 +74,7 @@ const DocumentationPage = () => {
 
       </div>
       <div className="mt-16"><Footer /></div>
-    </>
+    </div>
   );
 };
 

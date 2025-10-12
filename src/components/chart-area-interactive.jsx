@@ -10,74 +10,44 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
-// UPDATED: Data is now for the current year, 2025
-const chartData = [
-  // March 2025
-  { date: "2025-03-15", chats: 120 }, { date: "2025-03-16", chats: 138 },
-  // April 2025
-  { date: "2025-04-10", chats: 261 }, { date: "2025-04-11", chats: 327 },
-  { date: "2025-04-25", chats: 215 }, { date: "2025-04-26", chats: 75 },
-  { date: "2025-04-27", chats: 383 }, { date: "2025-04-28", chats: 122 },
-  { date: "2025-04-29", chats: 315 }, { date: "2025-04-30", chats: 454 },
-  // May 2025
-  { date: "2025-05-01", chats: 165 }, { date: "2025-05-05", chats: 481 },
-  { date: "2025-05-06", chats: 498 }, { date: "2025-05-15", chats: 473 },
-  { date: "2025-05-20", chats: 177 }, { date: "2025-05-25", chats: 201 },
-  { date: "2025-05-30", chats: 340 }, { date: "2025-05-31", chats: 178 },
-  // June 2025
-  { date: "2025-06-01", chats: 178 }, { date: "2025-06-02", chats: 470 },
-  { date: "2025-06-03", chats: 103 }, { date: "2025-06-04", chats: 439 },
-  { date: "2025-06-05", chats: 88 },  { date: "2025-06-06", chats: 294 },
-  { date: "2025-06-07", chats: 323 }, { date: "2025-06-08", chats: 385 },
-  { date: "2025-06-09", chats: 438 }, { date: "2025-06-10", chats: 155 },
-];
 
 const chartConfig = {
   chats: { label: "Chats", color: "hsl(var(--chart-1))" },
 };
 
-// NEW: Helper function to generate placeholder data for a flat line
-const generatePlaceholderData = (days) => {
-  const today = new Date("2025-06-10"); // Use the simulated current date
-  const data = [];
+// Helper to create a complete 30-day data map
+const generateDateMap = (days) => {
+  const map = new Map();
+  const today = new Date();
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() - i);
-    data.push({
-      date: date.toISOString().split('T')[0], // Format as 'YYYY-MM-DD'
-      chats: 0,
-    });
+    const formattedDate = date.toISOString().split('T')[0];
+    map.set(formattedDate, { date: formattedDate, chats: 0 });
   }
-  return data.reverse(); // Reverse to have the oldest date first
+  return map;
 };
 
-export function ChartAreaInteractive() {
-  const [timeRange, setTimeRange] = React.useState("90d");
+export function ChartAreaInteractive({ data: rawData = [] }) {
+  const [timeRange, setTimeRange] = React.useState("30d");
 
-  // Determine the number of days to show based on the selected time range
-  const daysToSubtract = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
-  
-  // Calculate the start date for filtering
-  const now = new Date("2025-06-10"); // Use the simulated current date
-  const startDate = new Date(now);
-  startDate.setDate(now.getDate() - daysToSubtract);
+  const chartData = React.useMemo(() => {
+    const days = 30; // We are now always showing the last 30 days
+    const dateMap = generateDateMap(days);
 
-  // Filter the real data
-  let filteredData = chartData.filter((item) => new Date(item.date) > startDate);
-
-  // THIS IS THE FIX: If there's no data, generate a flat line
-  if (filteredData.length === 0) {
-    filteredData = generatePlaceholderData(daysToSubtract);
-  }
+    // Populate the map with real data from the API
+    if (rawData && rawData.length > 0) {
+      for (const item of rawData) {
+        const formattedDate = new Date(item.day).toISOString().split('T')[0];
+        if (dateMap.has(formattedDate)) {
+          dateMap.set(formattedDate, { date: formattedDate, chats: item.count });
+        }
+      }
+    }
+    // Convert map to array and sort by date
+    return Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [rawData]);
 
   return (
     <Card className={cn("border-gray-800 bg-black/30 backdrop-blur-md")}>
@@ -85,23 +55,13 @@ export function ChartAreaInteractive() {
         <div className="grid flex-1 gap-1">
           <CardTitle className="text-white">Chat Analytics</CardTitle>
           <CardDescription className="text-gray-300">
-            Showing total chats for the selected period
+            Showing total chats for the last 30 days
           </CardDescription>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[160px] rounded-lg sm:ml-auto bg-gray-900 border-gray-700 text-gray-200 hover:bg-gray-800" aria-label="Select a value">
-            <SelectValue placeholder="Select time range" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl bg-gray-900 border-gray-700 text-white">
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-          </SelectContent>
-        </Select>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
-          <AreaChart data={filteredData}>
+          <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillChats" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />

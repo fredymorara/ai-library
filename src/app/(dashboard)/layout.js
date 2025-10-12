@@ -10,6 +10,7 @@ import Shuffle from "@/blocks/TextAnimations/Shuffle/Shuffle";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose, Menu } from "lucide-react"; // <-- Import Menu icon
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 import ClientOnly from "@/components/utils/ClientOnly";
 
@@ -65,7 +66,9 @@ export default function DashboardLayout({ children }) {
           <header className="flex h-[60px] items-center justify-between gap-4 border-b border-gray-800 bg-black/50 backdrop-blur-md px-6 flex-shrink-0">
             {/* --- FIX #2: Main title is now in the header --- */}
             <div>
-              <Shuffle text="Smart Library Assistant" className="text-2xl font-semibold text-green-500" triggerOnHover={true} />
+              <Link href="/">
+                <Shuffle text="Smart Library Assistant" className="text-2xl font-semibold text-green-500" triggerOnHover={true} />
+              </Link>
             </div>
             <ClientOnly>
               <UserButton afterSignOutUrl="/" />

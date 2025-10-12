@@ -17,24 +17,33 @@ export async function GET(request) {
     if (!institution) {
       return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
     }
+    const institutionId = institution.id;
 
+    // Get all book counts in one go
+    const { count: totalBooks, error: totalBooksError } = await supabase.from('books').select('id', { count: 'exact', head: true }).eq('institution_id', institutionId);
+    if (totalBooksError) throw totalBooksError;
+
+    const { count: ingestedBooks, error: ingestedBooksError } = await supabase.from('books').select('id', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('is_ingested', true);
+    if (ingestedBooksError) throw ingestedBooksError;
+
+    // Get chat analytics
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+    const thirtyDaysAgo = new Date(new Date().setDate(today.getDate() - 30)).toISOString();
 
-    const { count, error } = await supabase
-      .from('chat_sessions')
-      .select('id', { count: 'exact', head: true })
-      .eq('institution_id', institution.id)
-      .gte('started_at', firstDayOfMonth);
+    const { count: chatsThisMonth, error: monthError } = await supabase.from('chat_sessions').select('id', { count: 'exact', head: true }).eq('institution_id', institutionId).gte('started_at', firstDayOfMonth);
+    if (monthError) throw monthError;
 
-    if (error) {
-      throw error;
-    }
+    const { data: dailyData, error: dailyError } = await supabase.rpc('get_daily_chat_counts', { p_institution_id: institutionId, start_date: thirtyDaysAgo });
+    if (dailyError) throw dailyError;
 
-    // In a real app, you would also calculate previous month's count for percentage change
-    // For now, we'll just return the current month's count.
-
-    return NextResponse.json({ chatsThisMonth: count || 0, change: 0 });
+    return NextResponse.json({ 
+      totalBooks: totalBooks || 0,
+      ingestedBooks: ingestedBooks || 0,
+      chatsThisMonth: chatsThisMonth || 0, 
+      dailyChats: dailyData || [],
+      change: 0 // Placeholder
+    });
 
   } catch (e) {
     console.error('Analytics API error:', e);

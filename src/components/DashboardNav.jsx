@@ -12,9 +12,9 @@ const links = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Onboarding", href: "/onboarding", icon: FileUp },
   { name: "Snippets", href: "/snippets", icon: Code },
-  { name: "Settings", href: "/settings", icon: Settings },
   { name: "API Keys", href: "/settings/api-keys", icon: KeyRound },
   { name: "Documentation", href: "/docs", icon: BookOpen },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export const DashboardNav = ({ isCollapsed }) => {
