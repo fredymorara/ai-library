@@ -66,7 +66,7 @@ function YourApp() {
     <>
       <div className="space-y-8">
         <div className="mb-8">
-          <SplitText text="Integration Snippets" className="text-3xl font-bold text-white" />
+          <SplitText text="Integration Snippets" className="text-3xl font-bold text-green-500" />
           <p className="mt-2 text-gray-400">Use these snippets to integrate the chatbot into your website.</p>
         </div>
 

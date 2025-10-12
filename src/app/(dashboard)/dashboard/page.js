@@ -18,67 +18,61 @@ const StatCard = ({ title, value, icon, description }) => (
 );
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState({ totalBooks: 0, ingestedBooks: 0 });
+  const [stats, setStats] = useState({ totalBooks: 0, ingestedBooks: 0, chatsThisMonth: 0, change: 0 });
   const [loading, setLoading] = useState(true);
-  const { getToken } = useAuth();
+  const { getToken, isLoaded } = useAuth();
 
-  const fetchStats = useCallback(async () => {
+  const fetchDashboardStats = useCallback(async () => {
+    if (!isLoaded) return; // Wait for Clerk to be ready
     setLoading(true);
     try {
       const token = await getToken();
-      // We only need the counts, so we can ask for a single row to be efficient
-      const url = `/api/admin/books?limit=1`; 
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        // If the institution hasn't been created yet, it's a 404, which is okay.
-        if (response.status === 404) {
-          setStats({ totalBooks: 0, ingestedBooks: 0 });
-          return; // Exit gracefully
-        }
-        throw new Error('Failed to fetch stats.');
+      
+      // Fetch Book Stats
+      const booksUrl = `/api/admin/books?limit=1`;
+      const booksResponse = await fetch(booksUrl, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (booksResponse.ok) {
+        const { totalCount } = await booksResponse.json();
+        setStats(prev => ({ ...prev, totalBooks: totalCount }));
       }
-      const { totalCount } = await response.json();
 
-      // To get the ingested count, we need a separate query for now.
       const ingestedUrl = `/api/admin/books?limit=1&is_ingested=true`;
-      const ingestedResponse = await fetch(ingestedUrl, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      // Also handle 404 for this request
-      if (!ingestedResponse.ok) {
-        if (ingestedResponse.status === 404) {
-          setStats(prev => ({ ...prev, ingestedBooks: 0 }));
-          return;
-        }
-        throw new Error('Failed to fetch ingested stats.');
+      const ingestedResponse = await fetch(ingestedUrl, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (ingestedResponse.ok) {
+        const { totalCount: ingestedCount } = await ingestedResponse.json();
+        setStats(prev => ({ ...prev, ingestedBooks: ingestedCount }));
       }
-      const { totalCount: ingestedCount } = await ingestedResponse.json();
 
-      setStats({ totalBooks: totalCount, ingestedBooks: ingestedCount });
+      // Fetch Chat Stats
+      const analyticsUrl = `/api/admin/analytics`;
+      const analyticsResponse = await fetch(analyticsUrl, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (analyticsResponse.ok) {
+        const { chatsThisMonth, change } = await analyticsResponse.json();
+        setStats(prev => ({ ...prev, chatsThisMonth, change }));
+      }
+
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching dashboard stats:", error);
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, isLoaded]);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
 
   return (
     <>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <SplitText text="Dashboard" className="text-3xl font-bold text-white" />
+          <SplitText text="Dashboard" className="text-3xl font-bold text-green-500" />
           <p className="text-gray-400">An overview of your library&apos;s stats.</p>
         </div>
         <Link href="/onboarding"><Button>Manage Books <ArrowUpRight className="ml-2 h-4 w-4" /></Button></Link>
       </div>
       <div className="space-y-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
             title="Total Books"
             value={loading ? "..." : stats.totalBooks}
@@ -91,8 +85,8 @@ export default function DashboardPage() {
             icon={<CheckCircle className="h-4 w-4" />}
             description="Books ready for the AI to use."
           />
-          <StatCard title="Chats This Month" value="832" icon={<MessageSquare className="h-4 w-4" />} description="+22% from last month" />
-          <StatCard title="Total Users Helped" value="76" icon={<Users className="h-4 w-4" />} description="Unique chat sessions initiated." />
+          <StatCard title="Chats This Month" value={loading ? "..." : stats.chatsThisMonth} icon={<MessageSquare className="h-4 w-4" />} description={`${stats.change >= 0 ? '+' : ''}${stats.change}% from last month`} />
+
         </div>
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3"><ChartAreaInteractive /></div>

@@ -7,7 +7,6 @@ export const runtime = 'nodejs';
 // POST /api/admin/api-keys/[key_id] (to toggle status)
 export async function POST(request, { params }) {
   try {
-    await request.json(); // Await the request to satisfy Next.js
     const { userId, orgId } = await auth();
     if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

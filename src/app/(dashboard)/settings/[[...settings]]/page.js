@@ -19,7 +19,7 @@ export default function SettingsPage() {
 
          <div>
 
-           <SplitText text="Account Settings" className="text-3xl font-bold mb-1 text-white" />
+           <SplitText text="Account Settings" className="text-3xl font-bold mb-1 text-green-500" />
 
            <p className="text-gray-400 mb-6">Manage your profile and account details.</p>
 

@@ -98,11 +98,8 @@ export async function POST(request) {
       institution = newInstitution;
     }
 
-    // Generate API key
-    const institutionPrefix = institution.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .substring(0, 8);
+    // Generate a safe prefix from the org ID
+    const institutionPrefix = orgId.substring(4, 12).toLowerCase();
     
     const apiKey = generateApiKey(institutionPrefix);
     const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');

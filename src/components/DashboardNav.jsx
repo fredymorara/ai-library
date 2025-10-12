@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // For icon tooltips
-import { LayoutDashboard, FileUp, Code, Settings, KeyRound } from "lucide-react";
+import { LayoutDashboard, FileUp, Code, Settings, KeyRound, BookOpen } from "lucide-react";
 
 const links = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -14,6 +14,7 @@ const links = [
   { name: "Snippets", href: "/snippets", icon: Code },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "API Keys", href: "/settings/api-keys", icon: KeyRound },
+  { name: "Documentation", href: "/docs", icon: BookOpen },
 ];
 
 export const DashboardNav = ({ isCollapsed }) => {

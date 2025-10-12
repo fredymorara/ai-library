@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }) {
           <header className="flex h-[60px] items-center justify-between gap-4 border-b border-gray-800 bg-black/50 backdrop-blur-md px-6 flex-shrink-0">
             {/* --- FIX #2: Main title is now in the header --- */}
             <div>
-              <Shuffle text="Smart Library Assistant" className="text-2xl font-semibold text-white" triggerOnHover={true} />
+              <Shuffle text="Smart Library Assistant" className="text-2xl font-semibold text-green-500" triggerOnHover={true} />
             </div>
             <ClientOnly>
               <UserButton afterSignOutUrl="/" />

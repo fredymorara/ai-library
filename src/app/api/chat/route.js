@@ -15,7 +15,7 @@ async function validateApiKey(apiKey) {
   if (error || !apiKeyData) return { valid: false, error: 'Invalid API key.' };
   if (!apiKeyData.is_active) return { valid: false, error: 'API key has been deactivated.' };
   await supabase.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', apiKeyData.id);
-  return { valid: true, institutionId: apiKeyData.institution_id };
+  return { valid: true, institutionId: apiKeyData.institution_id, apiKeyData };
 }
 
 async function searchVectors(query, institutionId) {
@@ -38,15 +38,25 @@ export async function POST(request) {
   try {
     const authHeader = request.headers.get('Authorization');
     const apiKey = authHeader?.replace('Bearer ', '');
-    const { valid, institutionId, error: validationError } = await validateApiKey(apiKey);
+    const { valid, institutionId, apiKeyData, error: validationError } = await validateApiKey(apiKey);
     if (!valid) {
       return NextResponse.json({ error: validationError }, { status: 401 });
     }
+
+    const supabase = createServiceRoleClient(); // <-- DEFINE SUPERBASE HERE
 
     const { message } = await request.json();
     if (!message) {
       return NextResponse.json({ error: 'Message is required.' }, { status: 400 });
     }
+
+    // --- Start Analytics Logging ---
+    await supabase.from('chat_sessions').insert({
+      institution_id: institutionId,
+      api_key_id: apiKeyData.id,
+      first_user_message: message,
+    });
+    // --- End Analytics Logging ---
 
     const relevantContext = await searchVectors(message, institutionId);
     const contextText = relevantContext.map(chunk => chunk.content).join('\n\n---\n\n');

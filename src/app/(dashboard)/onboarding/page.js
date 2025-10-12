@@ -120,7 +120,8 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
 
 // Main Page Component
 export default function OnboardingPage() {
-  const { getToken } = useAuth();
+  const { getToken, orgId, isLoaded } = useAuth();
+  const institutionId = orgId;
   const fileInputRef = useRef(null);
 
   const [status, setStatus] = useState('idle');
@@ -140,6 +141,7 @@ export default function OnboardingPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchBooks = useCallback(async () => {
+    if (!isLoaded || !institutionId) return; // Wait for Clerk and orgId
     setLoading(true);
     try {
       const token = await getToken();
@@ -163,7 +165,7 @@ export default function OnboardingPage() {
     } finally {
       setLoading(false);
     }
-  }, [getToken, currentPage, debouncedSearchTerm]);
+  }, [getToken, currentPage, debouncedSearchTerm, isLoaded, institutionId]);
 
   useEffect(() => {
     fetchBooks();
@@ -278,7 +280,7 @@ export default function OnboardingPage() {
     <>
       <div className="space-y-8">
         <div className="mb-8">
-          <SplitText text="Onboarding & Data Management" className="text-3xl font-bold text-white" />
+          <SplitText text="Onboarding & Data Management" className="text-3xl font-bold text-green-500" />
           <p className="mt-2 text-gray-400">Manage, sync, and enrich your library&apos;s AI knowledge base.</p>
         </div>
         

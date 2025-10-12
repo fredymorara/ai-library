@@ -16,7 +16,7 @@ const buttonStyles = "bg-transparent text-white border border-green-500/50 hover
 const destructiveButtonStyles = "bg-transparent text-white border border-red-500/50 hover:bg-red-500/10 hover:border-red-500";
 
 export default function ApiKeysPage() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded } = useAuth();
   const [keys, setKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newKeyName, setNewKeyName] = useState('');
@@ -29,19 +29,27 @@ export default function ApiKeysPage() {
   const [copied, setCopied] = useState(false);
 
   const fetchKeys = useCallback(async () => {
+    if (!isLoaded) return; // Wait for Clerk to be ready
     setLoading(true);
     try {
       const token = await getToken();
       const response = await fetch('/api/admin/api-keys', { headers: { 'Authorization': `Bearer ${token}` } });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Failed to fetch API keys.');
-      setKeys(result.apiKeys);
+      if (!response.ok) {
+        if (response.status === 404) {
+          setKeys([]);
+          return;
+        }
+        const result = await response.json();
+        throw new Error(result.error || 'Failed to fetch API keys.');
+      }
+      const { apiKeys } = await response.json();
+      setKeys(apiKeys);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, isLoaded]);
 
   useEffect(() => {
     fetchKeys();
@@ -71,18 +79,28 @@ export default function ApiKeysPage() {
   };
 
   const handleToggleKey = async (key, isActive) => {
+    // Optimistic UI update
+    const originalKeys = [...keys];
+    const updatedKeys = keys.map(k => k.id === key.id ? { ...k, is_active: isActive } : k);
+    setKeys(updatedKeys);
+
     try {
       const token = await getToken();
-      await fetch(`/api/admin/api-keys/${key.id}`,
+      const response = await fetch(`/api/admin/api-keys/${key.id}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ is_active: isActive }),
         }
       );
-      fetchKeys();
+      if (!response.ok) {
+        // Revert on failure
+        setKeys(originalKeys);
+        throw new Error("Failed to update key status.");
+      }
     } catch (error) {
       console.error("Failed to toggle key status", error);
+      setKeys(originalKeys); // Revert on error
     }
   };
 
@@ -111,7 +129,7 @@ export default function ApiKeysPage() {
     <>
       <div className="space-y-8">
         <div className="mb-8">
-          <SplitText text="API Keys" className="text-3xl font-bold text-white" />
+          <SplitText text="API Keys" className="text-3xl font-bold text-green-500" />
           <p className="text-gray-400">Manage API keys for accessing your library's AI assistant.</p>
         </div>
 
