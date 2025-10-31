@@ -52,7 +52,7 @@ export const HeroWithCards = () => {
             cardDistance={100}
             verticalDistance={150}
             delay={3000}
-            pauseOnHover={true}
+            pauseOnHover={false}
             skewAmount={7}
             height={500}
             width={450}
