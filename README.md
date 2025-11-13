@@ -85,4 +85,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 Fredrick M. Morara - fmmorara@kabarak.ac.ke - momanyifredm@gmail.com
 
-Project Link: [https://github.com/fredymorara/ai-library](https://github.com/fredymorara/ai-library)
+Project Link: [ai-library](https://ai-library-dun.vercel.app)
