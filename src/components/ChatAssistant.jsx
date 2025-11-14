@@ -19,7 +19,7 @@ const ChatAssistant = ({ apiKey }) => {
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([
-        { role: 'bot', content: "Hello! How can I help you with the library's collection today?" }
+        { role: 'assistant', content: "Hello! How can I help you with the library's collection today?" }
       ]);
     }
     scrollToBottom();
@@ -27,8 +27,14 @@ const ChatAssistant = ({ apiKey }) => {
 
   const handleSend = async () => {
     if (!input.trim()) return;
+
     const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    
+    // Create the new messages array *before* the API call
+    const newMessages = [...messages, userMessage];
+
+    // Update the UI immediately
+    setMessages(newMessages);
     setInput('');
     setLoading(true);
 
@@ -39,7 +45,8 @@ const ChatAssistant = ({ apiKey }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ message: input }),
+        // Send the entire message history
+        body: JSON.stringify({ messages: newMessages }),
       });
 
       if (!response.ok || !response.body) {
@@ -51,7 +58,7 @@ const ChatAssistant = ({ apiKey }) => {
       let fullResponse = '';
       
       // Add a new bot message placeholder
-      setMessages(prev => [...prev, { role: 'bot', content: '' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -67,7 +74,7 @@ const ChatAssistant = ({ apiKey }) => {
       }
 
     } catch (error) {
-      const errorMessage = { role: 'bot', content: "Sorry, I couldn't get a response. Please try again." };
+      const errorMessage = { role: 'assistant', content: "Sorry, I couldn't get a response. Please try again." };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
@@ -97,7 +104,7 @@ const ChatAssistant = ({ apiKey }) => {
         <div className="space-y-6">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-              {msg.role === 'bot' && <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"><Bot className="h-5 w-5 text-green-400" /></div>}
+              {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"><Bot className="h-5 w-5 text-green-400" /></div>}
               <div className={`max-w-xs md:max-w-sm p-3 rounded-xl ${msg.role === 'user' ? 'bg-green-600/40 text-white' : 'bg-gray-800 text-gray-300'}`}>
                 <p className="text-sm">{msg.content}</p>
                 {msg.sources && (
