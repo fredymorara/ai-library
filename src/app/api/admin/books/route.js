@@ -68,3 +68,40 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Internal server error', details: e.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = createServiceRoleClient();
+
+    // Get the institution ID
+    const { data: institution } = await supabase
+      .from('institutions')
+      .select('id')
+      .eq('clerk_org_id', orgId)
+      .single();
+
+    if (!institution) {
+      return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
+    }
+
+    const { error } = await supabase
+      .from('books')
+      .delete()
+      .eq('institution_id', institution.id);
+
+    if (error) {
+      return NextResponse.json({ error: 'Failed to clear knowledge base', details: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: 'Knowledge base cleared successfully.' });
+
+  } catch (e) {
+    console.error('Error clearing books:', e);
+    return NextResponse.json({ error: 'Internal server error', details: e.message }, { status: 500 });
+  }
+}

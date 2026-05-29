@@ -16,58 +16,63 @@ const DocumentationPage = () => {
 
         <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="text-green-400">Step 1: Initial Setup & Onboarding</CardTitle>
+            <CardTitle className="text-green-400">Step 1: Creating Your CSV Catalog</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-gray-300">
-            <p>Welcome! Your journey begins by populating your library&apos;s knowledge base. This is the data the AI will use to answer questions.</p>
+            <p>Your journey begins by uploading your library&apos;s book catalog. This requires a standard CSV (Comma Separated Values) file.</p>
+            <div className="bg-black/50 p-4 rounded-md border border-gray-800">
+              <h4 className="font-semibold text-white mb-2">Required Columns</h4>
+              <p className="text-sm text-gray-400 mb-2">Your CSV must include a column for the book title and a column for the author. Our system automatically recognizes the following header names (case-insensitive):</p>
+              <ul className="list-disc list-inside space-y-1 pl-4 text-sm text-gray-300">
+                <li><strong>For Title:</strong> <code>title</code>, <code>Title</code>, or <code>book_title</code></li>
+                <li><strong>For Author:</strong> <code>author</code>, <code>Author</code>, <code>authors</code>, or <code>book_author</code></li>
+              </ul>
+            </div>
+            <p className="text-sm text-gray-400">Once your file is ready, navigate to <strong>Onboarding & Data Management</strong> and upload your CSV. The system supports massive files and will seamlessly batch-upload them into your database.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
+          <CardHeader>
+            <CardTitle className="text-green-400">Step 2: AI Ingestion & Data Enrichment</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-gray-300">
+            <p>Raw data isn&apos;t enough for AI. To provide contextually sound recommendations, the system needs to research the books and create vector embeddings.</p>
             <ol className="list-decimal list-inside space-y-2 pl-4 text-gray-400">
-              <li>Navigate to the Onboarding Page: Use the sidebar link to go to &quot;Onboarding & Data Management&quot;.</li>
-              <li>Prepare Your Data: Your book catalog should be in a CSV file with at least `title` and `author` columns.</li>
-              <li>Upload Your File: Click the &quot;Upload File&quot; button and select your CSV. The system will process it and add the books to your database. You will see them appear in the table below.</li>
+              <li>On the Onboarding page, click the <strong>&quot;Prepare Chatbot&quot;</strong> button.</li>
+              <li>Behind the scenes, the system will automatically query Wikipedia for summaries of your books and pass that data to Google&apos;s <code>gemini-embedding-2</code> model.</li>
+              <li>To respect API limits, ingestion processes 5 books at a time. Simply click the button to ingest the next batch!</li>
+              <li>Once ingested, books will appear with a green checkmark in your catalog.</li>
             </ol>
           </CardContent>
         </Card>
 
         <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="text-green-400">Step 2: Prepare the AI (Ingestion)</CardTitle>
+            <CardTitle className="text-green-400">Step 3: Generate an API Key</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-gray-300">
-            <p>Once your books are uploaded, you need to prepare the AI to use them. This process, called ingestion, involves reading the book data, creating vector embeddings, and storing them for the AI to search.</p>
+            <p>To securely access your unique knowledge base from external systems, you need an API key.</p>
             <ol className="list-decimal list-inside space-y-2 pl-4 text-gray-400">
-              <li>Start the Process: On the Onboarding page, click the &quot;Prepare Chatbot&quot; button.</li>
-              <li>Wait for Completion: The process runs in batches. You can click the button multiple times to ingest more books until all are processed. You will see status messages updating you on the progress.</li>
-              <li>Verify: Once ingested, the `is_ingested` status for the books will update in your database.</li>
+              <li>Navigate to the <strong>API Keys</strong> page from the sidebar.</li>
+              <li>Click <strong>Create New Key</strong> and give it a descriptive name (e.g., &quot;Student Portal Integration&quot;).</li>
+              <li><strong>Crucial:</strong> Copy the generated key immediately (`pk_live_...`). For security, it will never be shown again!</li>
             </ol>
           </CardContent>
         </Card>
 
         <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="text-green-400">Step 3: Get Your API Key</CardTitle>
+            <CardTitle className="text-green-400">Step 4: Embed the Chat Widget</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-gray-300">
-            <p>The API key is your password for the chat widget. It authenticates requests and ensures the chat only uses your institution&apos;s data.</p>
+            <p>You can now embed the context-aware assistant directly into your library management system or student portal.</p>
             <ol className="list-decimal list-inside space-y-2 pl-4 text-gray-400">
-              <li>Navigate to the API Keys Page: Use the sidebar link to go to &quot;API Keys&quot;.</li>
-              <li>Create a Key: Click the &quot;Create New Key&quot; button. Give it a descriptive name (e.g., &quot;Main Website Key&quot;).</li>
-              <li>Copy Your Key: A dialog will appear showing your new key. This is the only time you will see the full key. Copy it immediately and store it somewhere safe.</li>
-            </ol>
-          </CardContent>
-        </Card>
-
-        <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="text-green-400">Step 4: Integrate the Chat Widget</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-gray-300">
-            <p>You can now embed the chat assistant directly into your library&apos;s website.</p>
-            <ol className="list-decimal list-inside space-y-2 pl-4 text-gray-400">
-              <li>Navigate to the Snippets Page: Use the sidebar link to go to &quot;Integration Snippets&quot;.</li>
-              <li>Choose Your Method: Select either the &quot;React Component&quot; or &quot;HTML/JS&quot; tab.</li>
-              <li>Copy the Snippet: Copy the provided code snippet.</li>
-              <li>Add Your API Key: In the snippet you just copied, replace the placeholder `YOUR_API_KEY_HERE` with the actual API key you created in Step 3.</li>
-              <li>Deploy: Add the snippet to your website&apos;s code. The chat widget will now appear for your users.</li>
+              <li>Navigate to the <strong>Integration Snippets</strong> page.</li>
+              <li>Choose your preferred platform (React Component or standard HTML/JS snippet).</li>
+              <li>Copy the code and paste it into your external website.</li>
+              <li>Replace the <code>YOUR_API_KEY_HERE</code> placeholder with the API key you generated in Step 3.</li>
+              <li>Your users can now ask questions, and the AI will exclusively recommend books from <em>your</em> catalog!</li>
             </ol>
           </CardContent>
         </Card>

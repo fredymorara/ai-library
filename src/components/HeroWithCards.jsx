@@ -40,11 +40,6 @@ export const HeroWithCards = () => {
                 <GetStartedButton />
               </SignUpButton>
             )}
-            <Link href="https://smartlibraryassistant.streamlit.app/" target="_blank" rel="noopener noreferrer">
-              <Button size="lg" variant="secondary">
-                See a Demo
-              </Button>
-            </Link>
           </div>
         </div>
         <div className="relative h-[400px] w-full mt-12 md:mt-0">

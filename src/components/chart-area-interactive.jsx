@@ -39,7 +39,8 @@ export function ChartAreaInteractive({ data: rawData = [] }) {
     // Populate the map with real data from the API
     if (rawData && rawData.length > 0) {
       for (const item of rawData) {
-        const formattedDate = new Date(item.day).toISOString().split('T')[0];
+        const itemDate = item.date || item.day;
+        const formattedDate = new Date(itemDate).toISOString().split('T')[0];
         if (dateMap.has(formattedDate)) {
           dateMap.set(formattedDate, { date: formattedDate, chats: item.count });
         }

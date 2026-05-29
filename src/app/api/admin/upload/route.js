@@ -24,6 +24,7 @@ export async function POST(request) {
       .single();
 
     if (institutionError && institutionError.code !== 'PGRST116') {
+      console.error('Institution fetch error:', institutionError);
       return NextResponse.json({ error: 'Failed to verify institution.' }, { status: 500 });
     }
 
@@ -34,6 +35,7 @@ export async function POST(request) {
         .select('id')
         .single();
       if (createError) {
+        console.error('Institution create error details:', createError);
         return NextResponse.json({ error: 'Failed to create institution record.' }, { status: 500 });
       }
       institution = newInstitution;
@@ -57,40 +59,7 @@ export async function POST(request) {
 
     // 4. Handle File Based on Type
     if (fileExtension === 'csv') {
-      // --- CSV Processing ---
-      const fileContent = await file.text();
-      const parsedCsv = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
-
-      if (parsedCsv.errors.length) {
-        return NextResponse.json({ error: 'Failed to parse CSV file.', details: parsedCsv.errors }, { status: 400 });
-      }
-
-      if (!parsedCsv.meta.fields.includes('title')) {
-        return NextResponse.json({ error: 'CSV must have a "title" column.' }, { status: 400 });
-      }
-
-      const booksToInsert = parsedCsv.data
-        .filter(row => row.title) // Ensure title is present
-        .map(row => ({
-          institution_id: institutionId,
-          title: row.title,
-          author: row.author || 'Unknown', // Default author if not present
-          uploaded_by: userId,
-          is_ingested: false,
-        }));
-
-      if (booksToInsert.length === 0) {
-        return NextResponse.json({ error: 'No valid books found in the CSV file.' }, { status: 400 });
-      }
-
-      const { error: insertError } = await serviceSupabase.from('books').insert(booksToInsert);
-
-      if (insertError) {
-        return NextResponse.json({ error: 'Failed to save books from CSV.', details: insertError.message }, { status: 500 });
-      }
-
-      return NextResponse.json({ message: `Successfully added ${booksToInsert.length} books to your library.` });
-
+      return NextResponse.json({ error: 'CSVs must be uploaded using the client-side bulk upload process.' }, { status: 400 });
     } else {
       // --- PDF/Other File Processing ---
       const storagePath = `${institutionId}/${uuidv4()}-${filename}`;

@@ -106,7 +106,7 @@ const ChatAssistant = ({ apiKey }) => {
             <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
               {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"><Bot className="h-5 w-5 text-green-400" /></div>}
               <div className={`max-w-xs md:max-w-sm p-3 rounded-xl ${msg.role === 'user' ? 'bg-green-600/40 text-white' : 'bg-gray-800 text-gray-300'}`}>
-                <p className="text-sm">{msg.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 {msg.sources && (
                   <div className="mt-3 border-t border-gray-700 pt-2">
                     <h4 className="text-xs font-bold text-gray-400 mb-2">Sources:</h4>

@@ -8,8 +8,8 @@ export const runtime = 'nodejs';
 
 async function getWikipediaSummary(title, author) {
   try {
-    const simpleTitle = title.split('(')[0].strip();
-    const mainAuthor = author.split('/')[0].strip();
+    const simpleTitle = title.split('(')[0].trim();
+    const mainAuthor = author.split('/')[0].trim();
     const query = `${simpleTitle} (${mainAuthor})`;
     const summary = await wikipedia.summary(query, { autoSuggest: true });
     return summary;
@@ -30,6 +30,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Initialize the service role client (bypasses RLS)
     const supabase = createServiceRoleClient();
 
     const { data: institution } = await supabase.from('institutions').select('id').eq('clerk_org_id', orgId).single();

@@ -13,6 +13,7 @@ import { FilePlus, Search, Trash2, Edit, RefreshCw, Info, Loader2, CheckCircle, 
 import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
 import { Footer } from "@/components/Footer";
 import { useDebounce } from '@/lib/hooks/useDebounce';
+import Papa from 'papaparse';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -139,6 +140,7 @@ export default function OnboardingPage() {
   const [deleteBook, setDeleteBook] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const fetchBooks = useCallback(async () => {
     if (!isLoaded || !institutionId) return; // Wait for Clerk and orgId
@@ -182,7 +184,101 @@ export default function OnboardingPage() {
     setCurrentPage(1);
   };
 
+  const handleCsvUpload = async (file) => {
+    setStatus('uploading');
+    setMessage('Parsing CSV file... Please wait.');
+    
+    const token = await getToken();
+    const batchSize = 1000;
+    let currentBatch = [];
+    let totalProcessed = 0;
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      worker: false, // MUST be false, otherwise parser.pause() is delayed and the batch grows uncontrollably
+      step: (results, parser) => {
+        if (Object.keys(results.data).length > 0) {
+          currentBatch.push(results.data);
+        }
+        
+        if (currentBatch.length >= batchSize) {
+          parser.pause(); // Synchronously pause
+          
+          const batchToUpload = [...currentBatch];
+          currentBatch = []; 
+          
+          // Handle the async upload without blocking the synchronous step function
+          (async () => {
+            try {
+              setMessage(`Uploading batch... (${totalProcessed} records processed)`);
+              const response = await fetch('/api/admin/books/bulk', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ books: batchToUpload })
+              });
+              
+              if (!response.ok) {
+                const resJson = await response.json();
+                throw new Error(resJson.details || resJson.error || 'Failed to upload batch');
+              }
+              
+              totalProcessed += batchToUpload.length;
+              parser.resume();
+            } catch (error) {
+              parser.abort();
+              setStatus('error');
+              setMessage(`Upload stopped: ${error.message}`);
+            }
+          })();
+        }
+      },
+      complete: async () => {
+        // Upload any remaining rows
+        if (currentBatch.length > 0) {
+          try {
+            setMessage(`Uploading final batch...`);
+            const response = await fetch('/api/admin/books/bulk', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+              },
+              body: JSON.stringify({ books: currentBatch })
+            });
+            if (!response.ok) {
+              const resJson = await response.json();
+              throw new Error(resJson.details || resJson.error || 'Failed to upload final batch');
+            }
+            totalProcessed += currentBatch.length;
+          } catch (error) {
+             setStatus('error');
+             setMessage(`Upload stopped: ${error.message}`);
+             return;
+          }
+        }
+        
+        setStatus('success');
+        setMessage(`Successfully uploaded ${totalProcessed} books from CSV!`);
+        fetchBooks();
+      },
+      error: (error) => {
+        setStatus('error');
+        setMessage(`Error parsing CSV: ${error.message}`);
+      }
+    });
+  };
+
   const handleUpload = async (file) => {
+    if (!file) return;
+
+    if (file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv') {
+      return handleCsvUpload(file);
+    }
+
     setStatus('uploading');
     setMessage('Uploading and processing file...');
     try {
@@ -207,18 +303,18 @@ export default function OnboardingPage() {
 
   const handlePrepareChatbot = async () => {
     setStatus('uploading');
-    setMessage('Starting ingestion process... This may take a while.');
+    setMessage('Processing books for AI... this might take a minute.');
     try {
       const token = await getToken();
       const response = await fetch('/api/prepare-chatbot', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Failed to prepare chatbot.');
+      if (!response.ok) throw new Error(result.details || result.error || 'Failed to process books');
       setStatus('success');
       setMessage(result.message);
-      fetchBooks(); // Refresh the books to show their ingested status
+      fetchBooks();
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -276,6 +372,29 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleClearData = async () => {
+    setIsClearing(false);
+    setStatus('uploading');
+    setMessage('Clearing entire knowledge base...');
+    try {
+      const token = await getToken();
+      const response = await fetch('/api/admin/books', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to clear data.');
+      setStatus('success');
+      setMessage(result.message);
+      setBooks([]);
+      setTotalCount(0);
+      setCurrentPage(1);
+    } catch (error) {
+      setStatus('error');
+      setMessage(error.message);
+    }
+  };
+
   return (
     <>
       <div className="space-y-8">
@@ -284,9 +403,10 @@ export default function OnboardingPage() {
           <p className="mt-2 text-gray-400">Manage, sync, and enrich your library&apos;s AI knowledge base.</p>
         </div>
         
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus /> Add Books</CardTitle><CardDescription>Upload a CSV or PDF file.</CardDescription></CardHeader><CardContent><Button className={`w-full ${buttonStyles}`} onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload File</Button><input ref={fileInputRef} type="file" accept=".csv,.pdf" onChange={(e) => handleUpload(e.target.files[0])} className="hidden" /></CardContent></Card>
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button className={`w-full ${destructiveButtonStyles}`} onClick={handlePrepareChatbot}>Prepare Chatbot</Button></CardContent></Card>
+          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button className={`w-full ${buttonStyles}`} onClick={handlePrepareChatbot}>Prepare Chatbot</Button></CardContent></Card>
+          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-red-500"><Trash2 /> Clear Data</CardTitle><CardDescription>Permanently wipe your library.</CardDescription></CardHeader><CardContent><Button className={`w-full ${destructiveButtonStyles}`} onClick={() => setIsClearing(true)}><Trash2 className="mr-2 h-4 w-4" /> Clear All Data</Button></CardContent></Card>
         </div>
 
         {status !== 'idle' && message && (
@@ -348,6 +468,19 @@ export default function OnboardingPage() {
             <AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={destructiveButtonStyles}>
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Dialog */}
+      <AlertDialog open={isClearing} onOpenChange={setIsClearing}>
+        <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
+          <AlertDialogHeader><AlertDialogTitle className="text-red-500 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete your entire catalog and all AI embeddings.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearData} className={destructiveButtonStyles}>
+              Yes, wipe everything
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

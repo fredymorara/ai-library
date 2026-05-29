@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { createServiceRoleClient } from "@/lib/supabase/server-client";
+import { createClient } from "@/lib/supabase/server-client";
 
 export const runtime = 'nodejs';
 
 // POST /api/admin/api-keys/[key_id] (to toggle status)
 export async function POST(request, { params }) {
   try {
-    const { userId, orgId } = await auth();
+    const { userId, orgId, getToken } = await auth();
     if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -15,7 +15,8 @@ export async function POST(request, { params }) {
     const { key_id } = params;
     const { is_active } = await request.json();
 
-    const supabase = createServiceRoleClient();
+    const clerkToken = await getToken({ template: 'supabase' });
+    const supabase = createClient(clerkToken);
 
     // Verify ownership
     const { data: apiKey } = await supabase.from('api_keys').select('id, institution_id').eq('id', key_id).single();
@@ -49,13 +50,15 @@ export async function DELETE(request, { params }) {
   try {
     // We don't need the body, but this satisfies the Next.js requirement
     await request.text(); 
-    const { userId, orgId } = await auth();
+    const { userId, orgId, getToken } = await auth();
     if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { key_id } = params;
-    const supabase = createServiceRoleClient();
+    
+    const clerkToken = await getToken({ template: 'supabase' });
+    const supabase = createClient(clerkToken);
 
     // Verify ownership
     const { data: apiKey } = await supabase.from('api_keys').select('id, institution_id').eq('id', key_id).single();

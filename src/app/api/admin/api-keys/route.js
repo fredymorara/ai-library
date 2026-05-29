@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { createServiceRoleClient } from "@/lib/supabase/server-client";
+import { createClient } from "@/lib/supabase/server-client";
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -18,13 +18,14 @@ function generateApiKey(institutionPrefix) {
  */
 export async function GET(request) {
   try {
-    const { userId, orgId } = await auth();
+    const { userId, orgId, getToken } = await auth();
 
     if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServiceRoleClient();
+    const clerkToken = await getToken({ template: 'supabase' });
+    const supabase = createClient(clerkToken);
 
     // Get institution ID
     const { data: institution } = await supabase
@@ -62,7 +63,7 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
-    const { userId, orgId } = await auth();
+    const { userId, orgId, getToken } = await auth();
 
     if (!userId || !orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -70,7 +71,8 @@ export async function POST(request) {
 
     const { name, rateLimit = 1000 } = await request.json();
 
-    const supabase = createServiceRoleClient();
+    const clerkToken = await getToken({ template: 'supabase' });
+    const supabase = createClient(clerkToken);
 
     // Get institution ID
     let { data: institution } = await supabase

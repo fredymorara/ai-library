@@ -1,116 +1,35 @@
 // src/lib/embedding-generator.js
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Available embedding models
-const MODELS = {
-  MINI_LM: {
-    url: "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2",
-    dimensions: 384,
-    name: "MiniLM"
-  },
-  BGE_SMALL: {
-    url: "https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5",
-    dimensions: 384,
-    name: "BGE-Small"
-  },
-  BGE_BASE: {
-    url: "https://api-inference.huggingface.co/models/BAAI/bge-base-en-v1.5",
-    dimensions: 768,
-    name: "BGE-Base"
-  }
-};
-
-// Select which model to use (change this to switch models)
-const ACTIVE_MODEL = process.env.EMBEDDING_MODEL 
-  ? MODELS[process.env.EMBEDDING_MODEL] 
-  : MODELS.BGE_SMALL;
+const DIMENSIONS = 384; // Matches the existing Supabase book_vectors table
+const MODEL_NAME = "gemini-embedding-2";
 
 /**
- * Generates an embedding for a given text chunk using the Hugging Face Inference API.
+ * Generates an embedding for a given text chunk using Google Gemini API.
  * @param {string} text - The text chunk to embed.
  * @param {number} maxRetries - Maximum number of retry attempts.
  * @returns {Promise<Array<number>>} The vector embedding.
  */
 export async function getEmbedding(text, maxRetries = 3) {
-  // Validate environment
-  if (!process.env.HF_TOKEN) {
-    throw new Error("HF_TOKEN environment variable is not set");
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
   }
 
-  // Validate input
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
   if (!text || typeof text !== 'string') {
     throw new Error("Invalid text input for embedding");
   }
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const response = await fetch(ACTIVE_MODEL.url, {
-        method: "POST",
-        headers: { 
-          'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          inputs: text.trim(), 
-          options: { wait_for_model: true } 
-        }),
+      const result = await model.embedContent({
+        content: { parts: [{ text: text.trim() }] },
+        outputDimensionality: DIMENSIONS,
       });
+      const embedding = result.embedding.values;
 
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        let errorBody;
-        
-        try {
-          if (contentType?.includes('application/json')) {
-            errorBody = await response.json();
-          } else {
-            errorBody = await response.text();
-          }
-        } catch (parseError) {
-          errorBody = 'Failed to parse error response';
-        }
-
-        // Handle specific error codes
-        if (response.status === 503) {
-          // Model is loading
-          const waitTime = Math.min(2000 * Math.pow(2, attempt), 10000);
-          console.log(`[${ACTIVE_MODEL.name}] Model loading, waiting ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
-          await sleep(waitTime);
-          continue;
-        }
-
-        if (response.status === 429) {
-          // Rate limited
-          const waitTime = Math.min(3000 * Math.pow(2, attempt), 20000);
-          console.log(`[${ACTIVE_MODEL.name}] Rate limited, waiting ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
-          await sleep(waitTime);
-          continue;
-        }
-
-        if (response.status === 401) {
-          throw new Error("Invalid HF_TOKEN. Check your Hugging Face API token.");
-        }
-
-        throw new Error(`HF API error (${response.status}): ${JSON.stringify(errorBody)}`);
-      }
-
-      const result = await response.json();
-      
-      // Validate response
-      if (!result) {
-        throw new Error("Empty response from Hugging Face API");
-      }
-
-      // Handle different response formats
-      let embedding;
-      if (Array.isArray(result)) {
-        embedding = Array.isArray(result[0]) ? result[0] : result;
-      } else if (result.embeddings) {
-        embedding = result.embeddings[0] || result.embeddings;
-      } else {
-        embedding = result;
-      }
-
-      // Validate embedding
       if (!Array.isArray(embedding) || embedding.length === 0) {
         throw new Error("Invalid embedding format received");
       }
@@ -118,19 +37,12 @@ export async function getEmbedding(text, maxRetries = 3) {
       return embedding;
 
     } catch (error) {
-      console.error(`[${ACTIVE_MODEL.name}] Embedding error (attempt ${attempt + 1}/${maxRetries}):`, error.message);
+      console.error(`[${MODEL_NAME}] Embedding error (attempt ${attempt + 1}/${maxRetries}):`, error.message);
       
-      // Don't retry on authentication errors
-      if (error.message.includes('Invalid HF_TOKEN')) {
-        throw error;
-      }
-      
-      // Last attempt - throw error
       if (attempt === maxRetries - 1) {
         throw new Error(`Failed to generate embedding after ${maxRetries} attempts: ${error.message}`);
       }
       
-      // Wait before retry
       await sleep(1000 * (attempt + 1));
     }
   }
@@ -156,13 +68,13 @@ export async function getEmbeddingsBatch(textChunks, options = {}) {
   const embeddings = [];
   const totalBatches = Math.ceil(textChunks.length / batchSize);
 
-  console.log(`[${ACTIVE_MODEL.name}] Starting batch processing: ${textChunks.length} chunks in ${totalBatches} batches`);
+  console.log(`[${MODEL_NAME}] Starting batch processing: ${textChunks.length} chunks in ${totalBatches} batches`);
 
   for (let i = 0; i < textChunks.length; i += batchSize) {
     const batch = textChunks.slice(i, i + batchSize);
     const batchNum = Math.floor(i / batchSize) + 1;
 
-    console.log(`[${ACTIVE_MODEL.name}] Processing batch ${batchNum}/${totalBatches} (${batch.length} chunks)`);
+    console.log(`[${MODEL_NAME}] Processing batch ${batchNum}/${totalBatches} (${batch.length} chunks)`);
 
     try {
       const batchEmbeddings = await Promise.all(
@@ -181,17 +93,15 @@ export async function getEmbeddingsBatch(textChunks, options = {}) {
         });
       }
 
-      // Delay between batches to avoid rate limiting
       if (i + batchSize < textChunks.length) {
         await sleep(delayMs);
       }
     } catch (error) {
-      console.error(`[${ACTIVE_MODEL.name}] Batch ${batchNum} failed:`, error.message);
+      console.error(`[${MODEL_NAME}] Batch ${batchNum} failed:`, error.message);
       throw new Error(`Batch processing failed at batch ${batchNum}: ${error.message}`);
     }
   }
 
-  console.log(`[${ACTIVE_MODEL.name}] Batch processing complete: ${embeddings.length} embeddings generated`);
   return embeddings;
 }
 
@@ -200,7 +110,7 @@ export async function getEmbeddingsBatch(textChunks, options = {}) {
  * @returns {number} Embedding dimension
  */
 export function getEmbeddingDimension() {
-  return ACTIVE_MODEL.dimensions;
+  return DIMENSIONS;
 }
 
 /**
@@ -209,9 +119,9 @@ export function getEmbeddingDimension() {
  */
 export function getModelInfo() {
   return {
-    name: ACTIVE_MODEL.name,
-    url: ACTIVE_MODEL.url,
-    dimensions: ACTIVE_MODEL.dimensions
+    name: MODEL_NAME,
+    url: "https://ai.google.dev/models/gemini",
+    dimensions: DIMENSIONS
   };
 }
 
