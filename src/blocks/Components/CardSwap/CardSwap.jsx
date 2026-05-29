@@ -100,7 +100,9 @@ const CardSwap = ({
       if (order.current.length < 2) return;
 
       const [front, ...rest] = order.current;
-      const elFront = refs[front].current;
+      const elFront = refs[front]?.current;
+      if (!elFront) return;
+
       const tl = gsap.timeline();
       tlRef.current = tl;
 
@@ -112,7 +114,8 @@ const CardSwap = ({
 
       tl.addLabel("promote", `-=${config.durDrop * config.promoteOverlap}`);
       rest.forEach((idx, i) => {
-        const el = refs[idx].current;
+        const el = refs[idx]?.current;
+        if (!el) return;
         const slot = makeSlot(i, cardDistance, verticalDistance, refs.length);
         tl.set(el, { zIndex: slot.zIndex }, "promote");
         tl.to(
@@ -178,25 +181,37 @@ const CardSwap = ({
         node.removeEventListener("mouseenter", pause);
         node.removeEventListener("mouseleave", resume);
         clearInterval(intervalRef.current);
+        tlRef.current?.kill();
       };
     }
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      clearInterval(intervalRef.current);
+      tlRef.current?.kill();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing]);
 
-  const rendered = childArr.map((child, i) =>
-    isValidElement(child)
+  const rendered = childArr.map((child, i) => {
+    const slot = makeSlot(i, cardDistance, verticalDistance, childArr.length);
+    return isValidElement(child)
       ? cloneElement(child, {
           key: i,
           ref: refs[i],
-          style: { width, height, ...(child.props.style ?? {}) },
+          style: { 
+            width, 
+            height, 
+            transform: `translate3d(calc(-50% + ${slot.x}px), calc(-50% + ${slot.y}px), ${slot.z}px) skewY(${skewAmount}deg)`,
+            transformOrigin: "center center",
+            zIndex: slot.zIndex,
+            ...(child.props.style ?? {}) 
+          },
           onClick: (e) => {
             child.props.onClick?.(e);
             onCardClick?.(i);
           },
         })
-      : child,
-  );
+      : child;
+  });
 
   return (
     <div

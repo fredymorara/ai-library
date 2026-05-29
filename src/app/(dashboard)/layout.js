@@ -2,13 +2,11 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { UserButton } from "@clerk/nextjs";
 import { DashboardNav } from "@/components/DashboardNav";
 import Particles from "@/blocks/Backgrounds/Particles/Particles";
 import Shuffle from "@/blocks/TextAnimations/Shuffle/Shuffle";
-import { Button } from "@/components/ui/button";
-import { PanelLeftClose, PanelRightClose, Menu } from "lucide-react"; // <-- Import Menu icon
+import { SidebarSimple, List } from "@phosphor-icons/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -20,61 +18,60 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="relative min-h-screen text-white bg-black">
       {/* Background Layer */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-50">
         <Particles
-          particleColors={['#66FF00', '#CCFF00']}
+          particleColors={['#ffffff', '#ffffff']}
           particleCount={1000}
           particleSpread={10}
           speed={0.2}
-          particleBaseSize={200}
+          particleBaseSize={150}
           alphaParticles={true}
         />
       </div>
 
       {/* Main Content Grid */}
-      <div className="relative z-10 grid min-h-screen w-full transition-all duration-300"
-           style={{ gridTemplateColumns: isCollapsed ? '80px 1fr' : '280px 1fr' }}
+      <div className="relative z-10 grid min-h-screen w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+           style={{ gridTemplateColumns: isCollapsed ? '80px 1fr' : '260px 1fr' }}
       >
         
         {/* Sidebar */}
-        <div className="border-r border-gray-800 bg-black/50 backdrop-blur-md flex flex-col">
-          <div className="flex h-[60px] items-center border-b border-gray-800 px-6">
-            {/* --- FIX #3: Sidebar now has a "Menu" title --- */}
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <Menu className="h-6 w-6" />
-              {!isCollapsed && <span className="text-lg">Menu</span>}
+        <div className="border-r border-white/5 bg-[#050505]/80 backdrop-blur-xl flex flex-col shadow-[1px_0_10px_rgba(0,0,0,0.5)] z-20">
+          <div className="flex h-16 items-center border-b border-white/5 px-6">
+            <div className="flex items-center gap-3 text-white/80">
+              <List weight="bold" className="h-5 w-5" />
+              {!isCollapsed && <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Menu</span>}
             </div>
           </div>
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-3">
             <DashboardNav isCollapsed={isCollapsed} />
           </div>
-          <div className="mt-auto p-4 border-t border-gray-800">
-            {/* --- FIX #1: Button now has a green accent --- */}
-            <Button 
-              variant="outline"
-              className="w-full justify-center bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white border-green-500/50 hover:border-green-500" // <-- Green border classes
+          <div className="mt-auto p-4 border-t border-white/5">
+            <button 
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-sm text-white/50 transition-colors hover:bg-white/10 hover:text-white"
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
-              {isCollapsed ? <PanelRightClose className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+              <SidebarSimple weight="duotone" className="h-[18px] w-[18px]" />
+              {!isCollapsed && <span>Collapse</span>}
               <span className="sr-only">Toggle sidebar</span>
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Main Content Area */}
         <div className="flex flex-col h-screen">
-          <header className="flex h-[60px] items-center justify-between gap-4 border-b border-gray-800 bg-black/50 backdrop-blur-md px-6 flex-shrink-0">
-            {/* --- FIX #2: Main title is now in the header --- */}
+          <header className="flex h-16 items-center justify-between gap-4 border-b border-white/5 bg-transparent px-8 flex-shrink-0">
             <div>
               <Link href="/">
-                <Shuffle text="Smart Library Assistant" className="text-2xl font-semibold text-green-500" triggerOnHover={true} />
+                <Shuffle text="Smart Library Assistant" className="text-xl font-bold tracking-tight text-white/90" triggerOnHover={true} />
               </Link>
             </div>
             <ClientOnly>
-              <UserButton afterSignOutUrl="/" />
+              <div className="rounded-full border border-white/10 p-1 bg-white/5">
+                <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "h-8 w-8" } }} />
+              </div>
             </ClientOnly>
           </header>
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <main className="flex-1 p-6 sm:p-8 lg:p-12 overflow-y-auto">
             {children}
           </main>
         </div>

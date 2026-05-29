@@ -2,18 +2,13 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from "@clerk/nextjs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Switch } from "@/components/ui/switch"; // Using a Switch for toggling
-import { KeyRound, PlusCircle, Trash2, Copy, Check } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Key, PlusCircle, Trash, Copy, CheckCircle, Warning, SpinnerGap } from "@phosphor-icons/react";
 import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
-
-const buttonStyles = "bg-transparent text-white border border-green-500/50 hover:bg-green-500/10 hover:border-green-500";
-const destructiveButtonStyles = "bg-transparent text-white border border-red-500/50 hover:bg-red-500/10 hover:border-red-500";
 
 export default function ApiKeysPage() {
   const { getToken, isLoaded } = useAuth();
@@ -29,7 +24,7 @@ export default function ApiKeysPage() {
   const [copied, setCopied] = useState(false);
 
   const fetchKeys = useCallback(async () => {
-    if (!isLoaded) return; // Wait for Clerk to be ready
+    if (!isLoaded) return;
     setLoading(true);
     try {
       const token = await getToken();
@@ -79,7 +74,6 @@ export default function ApiKeysPage() {
   };
 
   const handleToggleKey = async (key, isActive) => {
-    // Optimistic UI update
     const originalKeys = [...keys];
     const updatedKeys = keys.map(k => k.id === key.id ? { ...k, is_active: isActive } : k);
     setKeys(updatedKeys);
@@ -94,13 +88,12 @@ export default function ApiKeysPage() {
         }
       );
       if (!response.ok) {
-        // Revert on failure
         setKeys(originalKeys);
         throw new Error("Failed to update key status.");
       }
     } catch (error) {
       console.error("Failed to toggle key status", error);
-      setKeys(originalKeys); // Revert on error
+      setKeys(originalKeys);
     }
   };
 
@@ -127,76 +120,122 @@ export default function ApiKeysPage() {
 
   return (
     <>
-      <div className="space-y-8">
-        <div className="mb-8">
-          <SplitText text="API Keys" className="text-3xl font-bold text-green-500" />
-          <p className="text-gray-400">Manage API keys for accessing your library&apos;s AI assistant.</p>
+      <div className="space-y-12">
+        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <SplitText text="API Keys" className="text-4xl font-bold tracking-tighter text-white sm:text-5xl" />
+            <p className="mt-4 text-xl font-medium text-gray-500">Manage API keys for accessing your library&apos;s AI assistant.</p>
+          </div>
+          <button 
+            className="group relative flex items-center gap-3 rounded-full border border-white/10 bg-white text-black pl-6 pr-2 py-2 text-sm font-bold transition-all duration-500 hover:bg-gray-200 active:scale-[0.98]"
+            onClick={() => setShowCreateDialog(true)}
+          >
+            Create New Key
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/10 transition-transform duration-500 group-hover:bg-black group-hover:text-white">
+              <PlusCircle weight="bold" className="h-4 w-4" />
+            </div>
+          </button>
         </div>
 
-        <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-white">Your API Keys</CardTitle>
-              <CardDescription>Keys only grant public query access. They don&apos;t have admin rights.</CardDescription>
+        <div className="p-[6px] rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md">
+          <div className="rounded-[calc(1.5rem-6px)] bg-[#050505]/90 p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2"><Key weight="duotone" className="h-5 w-5" /> Active Tokens</h3>
+              <p className="text-sm text-gray-400 mt-1">Keys only grant public query access. They don&apos;t have admin rights.</p>
             </div>
-            <Button className={buttonStyles} onClick={() => setShowCreateDialog(true)}><PlusCircle className="mr-2 h-4 w-4" /> Create New Key</Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader><TableRow className="hover:bg-transparent border-gray-800"><TableHead className="text-white">Name</TableHead><TableHead className="text-white">Key Prefix</TableHead><TableHead className="text-white">Status</TableHead><TableHead className="text-white">Last Used</TableHead><TableHead className="text-right text-white">Actions</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-gray-400 h-24">Loading keys...</TableCell></TableRow>
-                ) : keys.length > 0 ? (
-                  keys.map(key => (
-                    <TableRow key={key.id} className="hover:bg-transparent border-gray-800 text-white">
-                      <TableCell>{key.name}</TableCell>
-                      <TableCell><code className="bg-gray-700/50 p-1 rounded">{key.key_prefix}</code></TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch id={`active-switch-${key.id}`} checked={key.is_active} onCheckedChange={(checked) => handleToggleKey(key, checked)} />
-                          <label htmlFor={`active-switch-${key.id}`} className={key.is_active ? 'text-green-400' : 'text-gray-500'}>{key.is_active ? "Active" : "Inactive"}</label>
-                        </div>
-                      </TableCell>
-                      <TableCell>{key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-400" onClick={() => setKeyToDelete(key)}><Trash2 className="h-4 w-4" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow><TableCell colSpan={5} className="text-center text-gray-400 h-24">No API keys found.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+            
+            <div className="rounded-xl border border-white/10 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-white/[0.02]">
+                  <TableRow className="border-white/10 hover:bg-transparent">
+                    <TableHead className="text-gray-400 font-medium pl-6">Name</TableHead>
+                    <TableHead className="text-gray-400 font-medium">Key Prefix</TableHead>
+                    <TableHead className="text-gray-400 font-medium">Status</TableHead>
+                    <TableHead className="text-gray-400 font-medium">Last Used</TableHead>
+                    <TableHead className="text-right text-gray-400 font-medium pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={5} className="text-center text-gray-400 h-24">Loading keys...</TableCell></TableRow>
+                  ) : keys.length > 0 ? (
+                    keys.map(key => (
+                      <TableRow key={key.id} className="border-white/5 hover:bg-white/5 transition-colors text-white">
+                        <TableCell className="font-medium pl-6">{key.name}</TableCell>
+                        <TableCell><code className="bg-white/10 px-2 py-1 rounded text-gray-300 font-mono text-xs">{key.key_prefix}</code></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Switch id={`active-switch-${key.id}`} checked={key.is_active} onCheckedChange={(checked) => handleToggleKey(key, checked)} />
+                            <label htmlFor={`active-switch-${key.id}`} className={`text-xs font-semibold tracking-wide uppercase ${key.is_active ? 'text-green-400' : 'text-gray-500'}`}>{key.is_active ? "Active" : "Inactive"}</label>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-gray-400 text-sm">{key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}</TableCell>
+                        <TableCell className="text-right pr-6">
+                          <button className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-colors" onClick={() => setKeyToDelete(key)}>
+                            <Trash weight="duotone" className="h-4 w-4" />
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow><TableCell colSpan={5} className="text-center text-gray-400 h-24">No API keys found.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Dialogs */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-950 border-gray-800 text-white">
-          <DialogHeader><DialogTitle>Create New API Key</DialogTitle></DialogHeader>
-                    <div className="py-4">
-                      <label htmlFor="key-name" className="text-sm font-medium">Key Name (optional)</label>
-                      <Input id="key-name" placeholder="e.g., Production Key" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="mt-2 bg-gray-800 border-gray-700 text-white" />
-                    </div>
-          <DialogFooter><Button variant="outline" className={buttonStyles} onClick={() => setShowCreateDialog(false)}>Cancel</Button><Button className={buttonStyles} onClick={handleCreateKey} disabled={isCreating}>{isCreating ? 'Creating...' : 'Create Key'}</Button></DialogFooter>
+        <DialogContent className="sm:max-w-[425px] bg-[#050505] border-white/10 text-white rounded-3xl p-6">
+          <DialogHeader><DialogTitle className="text-xl font-bold tracking-tight">Create New API Key</DialogTitle></DialogHeader>
+          <div className="py-4">
+            <label htmlFor="key-name" className="text-sm font-medium text-gray-400">Key Name (optional)</label>
+            <Input id="key-name" placeholder="e.g., Production Key" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="mt-2 h-12 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-transparent" />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <button variant="outline" className="rounded-xl px-4 py-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors" onClick={() => setShowCreateDialog(false)}>Cancel</button>
+            <button className="flex items-center gap-2 rounded-xl bg-white text-black px-6 py-2 text-sm font-semibold hover:bg-gray-200 transition-colors" onClick={handleCreateKey} disabled={isCreating}>
+              {isCreating ? <SpinnerGap className="h-4 w-4 animate-spin" /> : null} {isCreating ? 'Creating...' : 'Create Key'}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showNewKeyDialog} onOpenChange={() => setShowNewKeyDialog(false)}>
-        <DialogContent className="sm:max-w-md bg-gray-950 border-gray-800 text-white">
-          <DialogHeader><DialogTitle>New API Key Generated</DialogTitle><CardDescription>Save this key now. You will not be able to see it again.</CardDescription></DialogHeader>
-          <div className="py-4 bg-gray-900/50 rounded-md flex items-center justify-between p-2"><code className="text-sm text-green-400 break-all">{generatedKey}</code><Button variant="ghost" size="icon" onClick={copyToClipboard}>{copied ? <Check /> : <Copy />}</Button></div>
-          <DialogFooter><Button className={buttonStyles} onClick={() => setShowNewKeyDialog(false)}>Done</Button></DialogFooter>
+        <DialogContent className="sm:max-w-md bg-[#050505] border-white/10 text-white rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold tracking-tight text-green-400">Key Generated</DialogTitle>
+            <p className="text-gray-400 text-sm mt-2">Save this key now. You will not be able to see it again.</p>
+          </DialogHeader>
+          <div className="my-6 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between p-4">
+            <code className="text-sm text-green-400 font-mono break-all">{generatedKey}</code>
+            <button className="rounded-lg p-2 text-gray-400 hover:bg-white/10 hover:text-white transition-colors ml-4 shrink-0" onClick={copyToClipboard}>
+              {copied ? <CheckCircle weight="fill" className="h-5 w-5 text-green-400" /> : <Copy weight="duotone" className="h-5 w-5" />}
+            </button>
+          </div>
+          <DialogFooter>
+            <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-white text-black px-6 py-3 text-sm font-semibold hover:bg-gray-200 transition-colors" onClick={() => setShowNewKeyDialog(false)}>
+              Done
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={!!keyToDelete} onOpenChange={() => setKeyToDelete(null)}>
-        <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will PERMANENTLY DELETE the key &quot;{keyToDelete?.name}&quot;. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel><AlertDialogAction className={destructiveButtonStyles} onClick={handleDeleteKey} disabled={isDeleting}>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</AlertDialogAction></AlertDialogFooter>
+        <AlertDialogContent className="bg-[#050505] border-white/10 text-white rounded-3xl p-6">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold tracking-tight text-red-500 flex items-center gap-2"><Warning weight="fill" className="h-6 w-6" /> Destructive Action</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 mt-2">This will PERMANENTLY DELETE the key &quot;{keyToDelete?.name}&quot;. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-8">
+            <AlertDialogCancel className="border-0 bg-transparent text-gray-400 hover:bg-transparent hover:text-white sm:mr-4">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0 font-semibold px-6" onClick={handleDeleteKey} disabled={isDeleting}>
+              {isDeleting ? <SpinnerGap className="mr-2 h-4 w-4 animate-spin" /> : null} Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>

@@ -2,14 +2,12 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from "@clerk/nextjs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { FilePlus, Search, Trash2, Edit, RefreshCw, Info, Loader2, CheckCircle, AlertTriangle, Upload, Book } from "lucide-react";
+import { FileArrowUp, MagnifyingGlass, Trash, PencilSimple, ArrowsClockwise, SpinnerGap, CheckCircle, Warning, UploadSimple, BookOpenText } from "@phosphor-icons/react";
 import SplitText from '@/blocks/TextAnimations/SplitText/SplitText';
 import { Footer } from "@/components/Footer";
 import { useDebounce } from '@/lib/hooks/useDebounce';
@@ -18,8 +16,30 @@ import Papa from 'papaparse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // --- STYLING CONSTANTS ---
-const buttonStyles = "bg-transparent text-white border border-green-500/50 hover:bg-green-500/10 hover:border-green-500";
-const destructiveButtonStyles = "bg-transparent text-white border border-red-500/50 hover:bg-red-500/10 hover:border-red-500";
+const ActionCard = ({ title, description, icon, action, buttonText, buttonIcon, destructive }) => (
+  <div className="p-[6px] rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md">
+    <div className="flex h-full flex-col justify-between rounded-[calc(1.5rem-6px)] bg-[#050505]/90 p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+      <div>
+        <div className="flex items-center gap-3">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full ${destructive ? 'bg-red-500/10 text-red-500' : 'bg-white/10 text-white'}`}>
+            {icon}
+          </div>
+          <h3 className="text-lg font-semibold tracking-tight text-white">{title}</h3>
+        </div>
+        <p className="mt-3 text-sm text-gray-400">{description}</p>
+      </div>
+      <div className="mt-6">
+        <button 
+          onClick={action}
+          className={`group relative flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all duration-300 active:scale-[0.98] ${destructive ? 'border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'border-white/10 bg-white/5 text-white hover:bg-white/10'}`}
+        >
+          {buttonIcon}
+          {buttonText}
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 // Cell component with tooltip for truncated text
 const TruncatedCell = ({ text }) => (
@@ -28,7 +48,7 @@ const TruncatedCell = ({ text }) => (
       <TooltipTrigger className="truncate max-w-xs md:max-w-md lg:max-w-lg text-left">
         {text}
       </TooltipTrigger>
-      <TooltipContent>
+      <TooltipContent className="bg-gray-900 border-white/10 text-white">
         <p>{text}</p>
       </TooltipContent>
     </Tooltip>
@@ -51,7 +71,7 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
           <PaginationLink 
             isActive={i === currentPage} 
             onClick={() => onPageChange(i)}
-            className={i === currentPage ? 'bg-green-500/20 border-green-500' : ''}
+            className={i === currentPage ? 'bg-white/10 text-white border-white/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}
           >
             {i}
           </PaginationLink>
@@ -62,38 +82,45 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
   };
 
   return (
-    <Card className="border-gray-800 bg-black/30 backdrop-blur-md">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2"><Book className="h-5 w-5" /> Your Live Collection ({totalCount} Books)</CardTitle>
-        <CardDescription className="text-gray-300">Search, edit, or delete books from the AI&apos;s knowledge base.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border border-gray-800">
+    <div className="p-[6px] rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md">
+      <div className="rounded-[calc(1.5rem-6px)] bg-[#050505]/90 p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2"><BookOpenText weight="duotone" className="h-5 w-5" /> Your Collection ({totalCount})</h3>
+          <p className="text-sm text-gray-400 mt-1">Manage the books currently accessible by the AI.</p>
+        </div>
+        
+        <div className="rounded-xl border border-white/10 overflow-hidden">
           <Table>
-            <TableHeader><TableRow className="border-gray-800 hover:bg-transparent"><TableHead className="text-white pl-6">Title</TableHead><TableHead className="text-white">Author</TableHead><TableHead className="text-right text-white pr-6">Actions</TableHead></TableRow></TableHeader>
+            <TableHeader className="bg-white/[0.02]">
+              <TableRow className="border-white/10 hover:bg-transparent">
+                <TableHead className="text-gray-400 font-medium pl-6">Title</TableHead>
+                <TableHead className="text-gray-400 font-medium">Author</TableHead>
+                <TableHead className="text-right text-gray-400 font-medium pr-6">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow><TableCell colSpan={3} className="text-center text-gray-400 h-24">Loading books...</TableCell></TableRow>
               ) : books.length > 0 ? (
                 books.map((book) => (
-                  <TableRow key={book.id} className="border-gray-800 hover:bg-transparent">
+                  <TableRow key={book.id} className="border-white/5 hover:bg-white/5 transition-colors">
                     <TableCell className="font-medium text-white pl-6"><TruncatedCell text={book.title} /></TableCell>
                     <TableCell className="text-gray-400"><TruncatedCell text={book.author} /></TableCell>
                     <TableCell className="text-right pr-6">
                       <TooltipProvider delayDuration={100}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="mr-2 rounded-full hover:bg-green-500/10" onClick={() => onEdit(book)}><Edit className="h-4 w-4 text-green-500" /></Button>
+                            <button className="mr-2 rounded-lg p-2 text-gray-400 hover:bg-white/10 hover:text-white transition-colors" onClick={() => onEdit(book)}><PencilSimple className="h-4 w-4" /></button>
                           </TooltipTrigger>
-                          <TooltipContent><p>Edit Book</p></TooltipContent>
+                          <TooltipContent className="bg-gray-900 border-white/10 text-white"><p>Edit Book</p></TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <TooltipProvider delayDuration={100}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-green-500/10" onClick={() => onDelete(book)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                            <button className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-colors" onClick={() => onDelete(book)}><Trash className="h-4 w-4" /></button>
                           </TooltipTrigger>
-                          <TooltipContent><p>Delete Book</p></TooltipContent>
+                          <TooltipContent className="bg-gray-900 border-white/10 text-white"><p>Delete Book</p></TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
@@ -106,16 +133,16 @@ const BookDataTable = ({ books, loading, totalCount, onEdit, onDelete, onPageCha
           </Table>
         </div>
         {totalPages > 1 && (
-          <Pagination className="mt-6 text-white">
+          <Pagination className="mt-6">
             <PaginationContent>
-              <PaginationItem><PaginationPrevious onClick={() => onPageChange(currentPage - 1)} /></PaginationItem>
+              <PaginationItem><PaginationPrevious className="text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer" onClick={() => onPageChange(currentPage - 1)} /></PaginationItem>
               {renderPaginationItems()}
-              <PaginationItem><PaginationNext onClick={() => onPageChange(currentPage + 1)} /></PaginationItem>
+              <PaginationItem><PaginationNext className="text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer" onClick={() => onPageChange(currentPage + 1)} /></PaginationItem>
             </PaginationContent>
           </Pagination>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -150,11 +177,10 @@ export default function OnboardingPage() {
       const url = `/api/admin/books?page=${currentPage}&limit=${booksPerPage}&search=${debouncedSearchTerm}`;
       const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!response.ok) {
-        // If the institution or books aren't found, it's a 404, which is okay for a new user.
         if (response.status === 404) {
           setBooks([]);
           setTotalCount(0);
-          return; // Exit gracefully
+          return;
         }
         throw new Error('Failed to fetch books.');
       }
@@ -196,19 +222,18 @@ export default function OnboardingPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      worker: false, // MUST be false, otherwise parser.pause() is delayed and the batch grows uncontrollably
+      worker: false,
       step: (results, parser) => {
         if (Object.keys(results.data).length > 0) {
           currentBatch.push(results.data);
         }
         
         if (currentBatch.length >= batchSize) {
-          parser.pause(); // Synchronously pause
+          parser.pause();
           
           const batchToUpload = [...currentBatch];
           currentBatch = []; 
           
-          // Handle the async upload without blocking the synchronous step function
           (async () => {
             try {
               setMessage(`Uploading batch... (${totalProcessed} records processed)`);
@@ -237,7 +262,6 @@ export default function OnboardingPage() {
         }
       },
       complete: async () => {
-        // Upload any remaining rows
         if (currentBatch.length > 0) {
           try {
             setMessage(`Uploading final batch...`);
@@ -337,7 +361,7 @@ export default function OnboardingPage() {
       if (!response.ok) throw new Error(result.error || 'Failed to update book.');
       setStatus('success');
       setMessage('Book updated successfully.');
-      await fetchBooks(); // Re-fetch to show the update
+      await fetchBooks();
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -362,7 +386,7 @@ export default function OnboardingPage() {
       if (!response.ok) throw new Error(result.error || 'Failed to delete book.');
       setStatus('success');
       setMessage('Book deleted successfully.');
-      await fetchBooks(); // Re-fetch to show the update
+      await fetchBooks();
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -398,29 +422,59 @@ export default function OnboardingPage() {
   return (
     <>
       <div className="space-y-8">
-        <div className="mb-8">
-          <SplitText text="Onboarding & Data Management" className="text-3xl font-bold text-green-500" />
-          <p className="mt-2 text-gray-400">Manage, sync, and enrich your library&apos;s AI knowledge base.</p>
+        <div className="mb-12">
+          <SplitText text="Data Sync" className="text-4xl font-bold tracking-tighter text-white sm:text-5xl" />
+          <p className="mt-2 text-lg text-gray-400">Manage, sync, and enrich your library&apos;s AI knowledge base.</p>
         </div>
         
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><FilePlus /> Add Books</CardTitle><CardDescription>Upload a CSV or PDF file.</CardDescription></CardHeader><CardContent><Button className={`w-full ${buttonStyles}`} onClick={() => fileInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Upload File</Button><input ref={fileInputRef} type="file" accept=".csv,.pdf" onChange={(e) => handleUpload(e.target.files[0])} className="hidden" /></CardContent></Card>
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-white"><RefreshCw /> Prepare Chatbot</CardTitle><CardDescription>Process books to make them available to the AI.</CardDescription></CardHeader><CardContent><Button className={`w-full ${buttonStyles}`} onClick={handlePrepareChatbot}>Prepare Chatbot</Button></CardContent></Card>
-          <Card className="border-gray-800 bg-black/30 backdrop-blur-md"><CardHeader><CardTitle className="flex items-center gap-2 text-red-500"><Trash2 /> Clear Data</CardTitle><CardDescription>Permanently wipe your library.</CardDescription></CardHeader><CardContent><Button className={`w-full ${destructiveButtonStyles}`} onClick={() => setIsClearing(true)}><Trash2 className="mr-2 h-4 w-4" /> Clear All Data</Button></CardContent></Card>
+          <ActionCard 
+            title="Add Books"
+            description="Upload a CSV or PDF file to instantly ingest books."
+            icon={<FileArrowUp weight="duotone" className="h-5 w-5" />}
+            action={() => fileInputRef.current?.click()}
+            buttonText="Upload File"
+            buttonIcon={<UploadSimple weight="bold" className="h-4 w-4" />}
+          />
+          <input ref={fileInputRef} type="file" accept=".csv,.pdf" onChange={(e) => handleUpload(e.target.files[0])} className="hidden" />
+
+          <ActionCard 
+            title="Prepare Chatbot"
+            description="Process raw text into searchable AI embeddings."
+            icon={<ArrowsClockwise weight="duotone" className="h-5 w-5" />}
+            action={handlePrepareChatbot}
+            buttonText="Process Data"
+            buttonIcon={<ArrowsClockwise weight="bold" className="h-4 w-4" />}
+          />
+
+          <ActionCard 
+            title="Clear Data"
+            description="Permanently wipe your library catalog and vectors."
+            icon={<Trash weight="duotone" className="h-5 w-5" />}
+            action={() => setIsClearing(true)}
+            buttonText="Wipe Everything"
+            buttonIcon={<Trash weight="bold" className="h-4 w-4" />}
+            destructive={true}
+          />
         </div>
 
         {status !== 'idle' && message && (
-          <div className="flex items-center gap-3 rounded-md bg-gray-900/50 p-4">
-            {status === 'uploading' && <Loader2 className="h-5 w-5 animate-spin text-blue-400" />}
-            {status === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
-            {status === 'error' && <AlertTriangle className="h-5 w-5 text-red-500" />}
-            <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-gray-300'}`}>{message}</p>
+          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+            {status === 'uploading' && <SpinnerGap weight="bold" className="h-5 w-5 animate-spin text-white" />}
+            {status === 'success' && <CheckCircle weight="fill" className="h-5 w-5 text-white" />}
+            {status === 'error' && <Warning weight="fill" className="h-5 w-5 text-red-500" />}
+            <p className={`text-sm font-medium ${status === 'error' ? 'text-red-400' : 'text-gray-300'}`}>{message}</p>
           </div>
         )}
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input placeholder="Search your collection..." className="pl-10 bg-gray-900/50 border-gray-700 text-white" value={searchTerm} onChange={handleSearchChange} />
+        <div className="relative max-w-md">
+          <MagnifyingGlass weight="bold" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input 
+            placeholder="Search your collection..." 
+            className="pl-12 h-12 bg-white/5 border-white/10 text-white rounded-2xl focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-transparent placeholder:text-gray-500" 
+            value={searchTerm} 
+            onChange={handleSearchChange} 
+          />
         </div>
 
         <BookDataTable 
@@ -437,37 +491,40 @@ export default function OnboardingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editBook} onOpenChange={(isOpen) => !isOpen && setEditBook(null)}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-950 border-gray-800 text-white">
-          <DialogHeader><DialogTitle>Edit Book</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-[425px] bg-[#050505] border-white/10 text-white rounded-3xl p-6">
+          <DialogHeader><DialogTitle className="text-xl font-bold tracking-tight">Edit Book</DialogTitle></DialogHeader>
           {editBook && (
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="title" className="text-right">Title</label>
-                <Input id="title" value={editBook.title} onChange={(e) => setEditBook({...editBook, title: e.target.value})} className="col-span-3 bg-gray-800 border-gray-700 text-white" />
+              <div className="grid gap-2">
+                <label htmlFor="title" className="text-sm font-medium text-gray-400">Title</label>
+                <Input id="title" value={editBook.title} onChange={(e) => setEditBook({...editBook, title: e.target.value})} className="h-12 bg-white/5 border-white/10 text-white rounded-xl" />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="author" className="text-right">Author</label>
-                <Input id="author" value={editBook.author} onChange={(e) => setEditBook({...editBook, author: e.target.value})} className="col-span-3 bg-gray-800 border-gray-700 text-white" />
+              <div className="grid gap-2">
+                <label htmlFor="author" className="text-sm font-medium text-gray-400">Author</label>
+                <Input id="author" value={editBook.author} onChange={(e) => setEditBook({...editBook, author: e.target.value})} className="h-12 bg-white/5 border-white/10 text-white rounded-xl" />
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button onClick={() => setEditBook(null)} variant="outline" className={buttonStyles}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={isEditing} className={buttonStyles}>
-              {isEditing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Changes
-            </Button>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <button onClick={() => setEditBook(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors">Cancel</button>
+            <button onClick={handleEdit} disabled={isEditing} className="flex items-center gap-2 rounded-xl bg-white text-black px-6 py-2 text-sm font-semibold hover:bg-gray-200 transition-colors">
+              {isEditing ? <SpinnerGap className="h-4 w-4 animate-spin" /> : null} Save Changes
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteBook} onOpenChange={(isOpen) => !isOpen && setDeleteBook(null)}>
-        <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete &quot;{deleteBook?.title}&quot;.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={destructiveButtonStyles}>
-              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Delete
+        <AlertDialogContent className="bg-[#050505] border-white/10 text-white rounded-3xl p-6">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold tracking-tight">Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">This will permanently delete &quot;{deleteBook?.title}&quot; from the catalog.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel className="border-0 bg-transparent text-gray-400 hover:bg-transparent hover:text-white sm:mr-4">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0">
+              {isDeleting ? <SpinnerGap className="mr-2 h-4 w-4 animate-spin" /> : null} Delete Book
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -475,12 +532,15 @@ export default function OnboardingPage() {
 
       {/* Clear All Dialog */}
       <AlertDialog open={isClearing} onOpenChange={setIsClearing}>
-        <AlertDialogContent className="bg-gray-950 border-gray-800 text-white">
-          <AlertDialogHeader><AlertDialogTitle className="text-red-500 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete your entire catalog and all AI embeddings.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className={buttonStyles}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearData} className={destructiveButtonStyles}>
-              Yes, wipe everything
+        <AlertDialogContent className="bg-[#050505] border-white/10 text-white rounded-3xl p-6">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold tracking-tight text-red-500 flex items-center gap-2"><Warning weight="fill" className="h-6 w-6" /> Destructive Action</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 mt-2">This action cannot be undone. This will permanently wipe your entire catalog and destroy all semantic embeddings associated with this workspace.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-8">
+            <AlertDialogCancel className="border-0 bg-transparent text-gray-400 hover:bg-transparent hover:text-white sm:mr-4">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearData} className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0 font-semibold px-6">
+              Wipe Data
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
