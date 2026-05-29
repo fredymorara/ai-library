@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SquaresFour, FileArrowUp, Code, Gear, Key, BookOpenText } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 
 const links = [
   { name: "Overview", href: "/dashboard", icon: SquaresFour },
@@ -21,27 +22,45 @@ export const DashboardNav = ({ isCollapsed }) => {
 
   return (
     <TooltipProvider>
-      <nav className="grid items-start gap-1">
+      <nav className="grid items-start gap-1.5">
         {links.map((link) => {
           const isActive = pathname === link.href;
           const activeClass = isActive 
-            ? "bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]" 
-            : "text-white/50 hover:bg-white/5 hover:text-white";
+            ? "text-white" 
+            : "text-white/40 hover:text-white/90";
           
           return isCollapsed ? (
             <Tooltip key={link.name} delayDuration={0}>
               <TooltipTrigger asChild>
-                <Link href={link.href} className={cn("flex h-10 w-full items-center justify-center rounded-lg transition-all duration-300", activeClass)}>
-                  <link.icon weight={isActive ? "fill" : "regular"} className="h-[18px] w-[18px]" />
+                <Link href={link.href} className={cn("group relative flex h-11 w-full items-center justify-center rounded-xl transition-colors duration-300 outline-none", activeClass)}>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeNavBackgroundCollapsed"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/15 to-white/5 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <link.icon weight={isActive ? "fill" : "duotone"} className={cn("relative z-10 h-5 w-5 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
                   <span className="sr-only">{link.name}</span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 border-white/10 text-white">{link.name}</TooltipContent>
+              <TooltipContent side="right" className="bg-[#0a0a0a] border-white/10 text-white/80 font-medium tracking-wide rounded-lg ml-2">{link.name}</TooltipContent>
             </Tooltip>
           ) : (
-            <Link key={link.name} href={link.href} className={cn("flex h-10 w-full items-center justify-start rounded-lg px-3 text-sm font-medium transition-all duration-300", activeClass)}>
-              <link.icon weight={isActive ? "fill" : "regular"} className="mr-3 h-[18px] w-[18px]" />
-              {link.name}
+            <Link key={link.name} href={link.href} className={cn("group relative flex h-[42px] w-full items-center justify-start rounded-xl px-3.5 text-[13px] font-semibold tracking-wide transition-colors duration-300 outline-none", activeClass)}>
+              {isActive && (
+                <motion.div
+                  layoutId="activeNavBackground"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/15 to-white/5 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.03)]"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <div className="relative flex items-center z-10 w-full">
+                <link.icon weight={isActive ? "fill" : "duotone"} className={cn("mr-3 h-[18px] w-[18px] transition-transform duration-300", !isActive && "group-hover:-rotate-3 group-hover:scale-110")} />
+                {link.name}
+              </div>
             </Link>
           );
         })}

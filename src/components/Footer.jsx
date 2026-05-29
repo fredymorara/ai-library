@@ -33,11 +33,11 @@ export const Footer = () => {
 
         <div className="mt-32 flex flex-col items-center justify-between border-t border-white/5 py-8 md:flex-row">
           <p className="text-sm font-medium tracking-wide text-gray-500 uppercase">
-            &copy; {new Date().getFullYear()} Smart Library Assistant.
+            &copy; {new Date().getFullYear()} Library AI.
           </p>
           <div className="mt-4 flex gap-6 md:mt-0">
-            <a href="#" className="text-sm font-medium tracking-wide text-gray-500 uppercase transition-colors hover:text-white">Github</a>
-            <a href="#" className="text-sm font-medium tracking-wide text-gray-500 uppercase transition-colors hover:text-white">LinkedIn</a>
+            <a href="https://github.com/fredymorara" target="_blank" rel="noopener noreferrer" className="text-sm font-medium tracking-wide text-gray-500 uppercase transition-colors hover:text-white">Github</a>
+            <a href="https://www.linkedin.com/in/freddymorara" target="_blank" rel="noopener noreferrer" className="text-sm font-medium tracking-wide text-gray-500 uppercase transition-colors hover:text-white">LinkedIn</a>
           </div>
         </div>
 
