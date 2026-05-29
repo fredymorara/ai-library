@@ -9,6 +9,7 @@ import Shuffle from "@/blocks/TextAnimations/Shuffle/Shuffle";
 import { SidebarSimple, List } from "@phosphor-icons/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 import ClientOnly from "@/components/utils/ClientOnly";
 
@@ -61,8 +62,9 @@ export default function DashboardLayout({ children }) {
         <div className="flex flex-col h-screen">
           <header className="flex h-16 items-center justify-between gap-4 border-b border-white/5 bg-transparent px-8 flex-shrink-0">
             <div>
-              <Link href="/">
-                <Shuffle text="Smart Library Assistant" className="text-xl font-bold tracking-tight text-white/90" triggerOnHover={true} />
+              <Link href="/" className="flex items-center gap-3">
+                <Logo className="h-8 w-8 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" />
+                <Shuffle text="Library AI" className="text-xl font-bold tracking-tight text-white/90" triggerOnHover={true} />
               </Link>
             </div>
             <ClientOnly>

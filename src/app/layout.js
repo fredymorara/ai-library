@@ -9,8 +9,11 @@ const outfit = Outfit({
 });
 
 export const metadata = {
-  title: "Smart Library Assistant",
+  title: "Library AI",
   description: "AI-powered library search and discovery.",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
